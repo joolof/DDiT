@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # -----------------------------------------------------------
 np.seterr(over='ignore')
 # -----------------------------------------------------------
-class RT(object):
+class Disk(object):
     """
     docstring for RT
     """
@@ -103,10 +103,11 @@ class RT(object):
         """
         """
         Check the input parameters
+        And put the angles in radians
         """
         self._check_parameters(kwargs)
         """
-        Put the angles in radians and define some commonly used variables
+        Compute some trigonometric things
         """
         self._trigonometry()
         """
@@ -128,6 +129,12 @@ class RT(object):
         ye, ze, ys, zs, delta = self._get_sphere()
         self._get_flux(ye, ze, ys, zs)
         self._ismodel = True
+
+        #fig = plt.figure(figsize=(7,7))
+        #ax1 = fig.add_axes([0.16, 0.14, 0.8, 0.79])
+        #ax1.imshow(ze-zs)
+        ##ax1.imshow(ye-ys)
+        #plt.show()
 
     """
     Method to compute the emission between the entry and exit points.
@@ -292,9 +299,9 @@ class RT(object):
         sys.exit()
 
 if __name__ == '__main__':        
-    test = RT()
+    test = Disk()
     t0 = time.time()
-    test.compute_model(e = 0.3, incl = 69., PA = 90., a = 0.89, gsca = 0.3, gpol = 0.4, omega = 180., opang = 0.04, pin = 15., pout = -3.5)
-    print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
+    test.compute_model(e = 0.3, incl = 89., PA = 0., a = 0.89, gsca = 0.3, gpol = 0.4, omega = 180., opang = 0.05, pin = 15., pout = -3.5)
+    #print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     test.plot()
 
