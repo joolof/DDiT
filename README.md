@@ -5,3 +5,8 @@
 
 Python code to produce synthetic images of debris disks, in total and polarized intensity.
 
+
+```python
+from DDiT import RT
+```
+
