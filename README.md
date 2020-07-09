@@ -17,6 +17,17 @@ from DDiT import Disk
 disk = Disk()
 disk.compute_model(a = 0.6, i = 60., e = 0.3)
 ```
+
+Alternatively, if you do not want to pass the arguments to the function (let's say you want to do some MCMC and want some liberty in choosing the free parameters), you can also do the following:
+
+```python
+from DDiT import Disk
+disk = Disk()
+disk.a = 0.6
+disk.i = 60.
+disk.e = 0.3
+disk.compute_model()
+```
 Once the model is computed, you will find the images in the variables `disk.intensity` and `disk.polarized` for the total and polarized intensity.
 
 ## References
