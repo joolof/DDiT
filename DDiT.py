@@ -17,7 +17,7 @@ class Disk(object):
         if type(nframe) is not int: self._error_msg('The parameter \'nframe\' should be an integer ')
         if nframe%2 == 1:
             print('It is probably better if \'nframe\' is an even number, to sample to midplace properly.')
-        self._threshold = 1.e-2
+        self._threshold = 5.e-2
         self._nx = nx
         self._cx = self._nx//2
         self._nframe = nframe
@@ -67,6 +67,7 @@ class Disk(object):
         it should be a * (1 - e**2) / (1-e) which simplyfies as a*(1+e)
         """
         rmax = self._threshold**(1.e0 / self.pout) * self.a * (1.e0 + self.e) 
+        #print(rmax)
         radius = rmax**2. - self._xm**2.
         radius[(radius<0)] = 0.
         radius = np.sqrt(radius)
@@ -79,6 +80,48 @@ class Disk(object):
         zs[sel] = self._st * (self._ym[sel] - ys[sel])
 
         return ye, ze, ys, zs, delta
+
+    def _get_cube(self):
+        """
+        Get the entry and exit points of a rectangular cube
+        """
+        ye, ys = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
+        ze, zs = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
+        """
+        The maximum radius and maximum height
+        """
+        rmax = self._threshold**(1.e0 / self.pout) * self.a * (1.e0 + self.e) 
+        zmax = 3. * rmax * self._to
+        """
+        The upper layer
+        """
+        layer = self._ym + zmax * self._ti
+        sel = ((layer >= -rmax) & (layer <= rmax) & (np.abs(self._xm) <= rmax))
+        ye[sel] = layer[sel]
+        ze[sel] = zmax
+        """
+        The lower layer
+        """
+        layer = self._ym - zmax * self._ti
+        sel = ((layer >= -rmax) & (layer <= rmax) & (np.abs(self._xm) <= rmax))
+        ys[sel] = layer[sel]
+        zs[sel] = -zmax
+        """
+        The front layer
+        """
+        layer = -(self._ym + rmax) / self._ti
+        sel = ((layer >= -zmax) & (layer <= zmax) & (np.abs(self._xm) <= rmax))
+        zs[sel] = layer[sel]
+        ys[sel] = -rmax
+        """
+        The back layer
+        """
+        layer = (rmax - self._ym) / self._ti
+        sel = ((layer >= -zmax) & (layer <= zmax) & (np.abs(self._xm) <= rmax))
+        ze[sel] = layer[sel]
+        ye[sel] = rmax
+
+        return ye, ze, ys, zs
 
     """
     Compute the model for the total and polarized intensity.
@@ -127,14 +170,9 @@ class Disk(object):
         Get the entry and exit points for the upper and lower layers
         """
         ye, ze, ys, zs, delta = self._get_sphere()
+        #ye, ze, ys, zs = self._get_cube()
         self._get_flux(ye, ze, ys, zs)
         self._ismodel = True
-
-        #fig = plt.figure(figsize=(7,7))
-        #ax1 = fig.add_axes([0.16, 0.14, 0.8, 0.79])
-        #ax1.imshow(ze-zs)
-        ##ax1.imshow(ye-ys)
-        #plt.show()
 
     """
     Method to compute the emission between the entry and exit points.
@@ -153,18 +191,28 @@ class Disk(object):
         So then I can compute the lenght of a given cell which is (ze-zs)/(nframe -1)
         And the volume of one cell is sqrt(Delta_z**2. + Delta_y**2) * pixelscale**2.
         """
-        volume = np.sqrt(((ze-zs)**2. + (ye-ys)**2.)/((self._nframe-1.)**2.))*self._pixscale**2.
+        volume = np.sqrt(((ze-zs)**2. + (ye-ys)**2.))/(self._nframe-1.)*self._pixscale**2.
         r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(self.azimuth + self.omega))
+
+        # ye-ys is >0
+        # ze-zs is <0
+        #fig = plt.figure(figsize=(7,7))
+        #ax1 = fig.add_axes([0.16, 0.14, 0.8, 0.79])
+        #ax1.imshow(self._xm, origin = 'lower')
+        #plt.show()
         for i in range(self._nframe-1):
             """
             Get the middle points of each cells.
             """
-            zi = zs + (ze - zs) * (2.*i + 1.) / (self._nframe-1)
-            yi = ys + (ye - ys) * (2.*i + 1.) / (self._nframe-1)
+            zi = zs + (ze - zs) * (i+0.5) / (self._nframe-1)
+            yi = ys + (ye - ys) * (i+0.5) / (self._nframe-1)
             """
             Define variables for the phase function, that need to be re-initialized for every iteration
             This slows down the code a bit, but it is more accurate and prevents some unfortunate 
             NaNs in some cases (especially if the position angle is 0 or 90 degrees.
+
+            I had tried to define them once, and set them to 0., but that did not improve the time.
+            For clarity, I leave it as it is now.
             """
             psca = np.zeros(shape=(self._nx, self._nx, 2))
             ppol = np.zeros(shape=(self._nx, self._nx, 2))
@@ -215,6 +263,17 @@ class Disk(object):
             self.polarized[sel] += density[sel] * ppol[sel,0]
             self.polarized[~sel] += density[~sel] * ppol[~sel,1]
 
+
+            #tmp = np.zeros(shape=(self._nx, self._nx))
+            #tmp[sel] = density[sel] * psca[sel,0]
+            #tmp[~sel] = density[~sel] * psca[~sel,0]
+
+            #fig = plt.figure(figsize=(7,7))
+            #ax1 = fig.add_axes([0.0, 0.0, 1., 1.])
+            #ax1.imshow(zi, origin = 'lower', vmin = 0., vmax = 5.0013e-7, cmap = 'inferno')
+            #ax1.axis('off')
+            #plt.savefig('debug/image_'+format(i,'04d')+'.png', edgecolor='black', dpi=100, facecolor='black')
+            #plt.close()
     """
     Plot the images
     """
@@ -233,6 +292,8 @@ class Disk(object):
             im = ax2.imshow(self.polarized, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap)
             ax2.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
             plt.show()
+            #print(np.percentile(self.intensity, 1.))
+            #print(np.percentile(self.intensity, 99.9))
 
     """
     Check the parameters that are passed as kwargs
@@ -283,6 +344,7 @@ class Disk(object):
         if self.incl == np.pi/2.:
             self.incl = 89.9 * np.pi / 180.
         self._cs, self._ss = np.cos(self.incl), np.sin(self.incl)
+        self._ti = np.tan(self.incl)
         self._st = self._cs / self._ss
         self._st2 = self._st**2.
         self._to = np.tan(self.opang)
@@ -301,7 +363,7 @@ class Disk(object):
 if __name__ == '__main__':        
     test = Disk()
     t0 = time.time()
-    test.compute_model(e = 0.3, incl = 89., PA = 0., a = 0.89, gsca = 0.3, gpol = 0.4, omega = 180., opang = 0.05, pin = 15., pout = -3.5)
-    #print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
+    test.compute_model(e = 0.0, incl = 88., PA = 90., a = 0.89, gsca = 0.0, gpol = 0.0, omega = 180., opang = 0.05, pin = 15., pout = -3.5)
+    print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     test.plot()
 
