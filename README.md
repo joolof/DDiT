@@ -3,7 +3,7 @@
 
 ![screenshot](screenshots/DDiT.png)
 
-A Python code to (quickly) produce synthetic images of debris disks, in total and polarized intensity using the Henyey-Greenstein approximation. In the model, the disk is not infinitely flat and while in principle it should work for any inclinations, at the moment, there are some **very** weird issues for large inclinations, and needs to be fixed as soon as possible.
+A Python code to (quickly) produce synthetic images of debris disks, in total and polarized intensity using the Henyey-Greenstein approximation. In the model, the disk is not infinitely flat and while in principle it should work for any inclinations, at the moment, there are some **very** weird issues for large inclinations that needs to be fixed as soon as possible.
 
 To use the module, download the python files above and install it with the following (using the `develop` option so that any further changes are automatically included):
 ```python
@@ -28,7 +28,7 @@ disk.i = 60. * np.pi / 180.
 disk.e = 0.3
 disk.compute_model()
 ```
-But in that case, you have to make sure that you put the angles in radians (and check the method `_check_parameters` to see how the position angle is defined). Once the model is computed, you will find the images in the variables `disk.intensity` and `disk.polarized` for the total and polarized intensity. Furthermore, in `disk.scattering`, `disk.distance`, and `disk.azimuth` you will find the scattering angle, the distance to the star, and the azimuthal angle,  in the midplane.
+But in that case, you have to make sure that you put the angles in radians (and check the method `_check_parameters` to see how the position angle is defined). Once the model is computed, you will find the images in the variables `disk.intensity` and `disk.polarized` for the total and polarized intensity. Furthermore, in `disk.scattering`, `disk.distance`, and `disk.azimuth` you will have access to the scattering angle, the distance to the star, and the azimuthal angle,  in the midplane.
 
 ## References
 
