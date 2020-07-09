@@ -23,12 +23,12 @@ Alternatively, if you do not want to pass the arguments to the function (let's s
 ```python
 from DDiT import Disk
 disk = Disk()
-disk.a = 0.6
+disk.a = 0.6 # in units of arcseconds
 disk.i = 60. * np.pi / 180.
 disk.e = 0.3
 disk.compute_model()
 ```
-But in that case, you have to make sure that you put the angles in radians (and check the convention for how the position angle is defined). Once the model is computed, you will find the images in the variables `disk.intensity` and `disk.polarized` for the total and polarized intensity.
+But in that case, you have to make sure that you put the angles in radians (and check the method `_check_parameters` to see how the position angle is defined). Once the model is computed, you will find the images in the variables `disk.intensity` and `disk.polarized` for the total and polarized intensity. Furthermore, in `disk.scattering`, `disk.distance`, and `disk.azimuth` you will find the scattering angle, the distance to the star, and the azimuthal angle,  in the midplane.
 
 ## References
 
