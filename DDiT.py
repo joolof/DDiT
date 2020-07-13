@@ -63,6 +63,7 @@ class Disk(object):
         """
         ye, ys = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
         ze, zs = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
+        xe = np.zeros(shape=(self._nx, self._nx))
         """
         it should be a * (1 - e**2) / (1-e) which simplyfies as a*(1+e)
         """
@@ -71,15 +72,24 @@ class Disk(object):
         radius = rmax**2. - self._xm**2.
         radius[(radius<0)] = 0.
         radius = np.sqrt(radius)
+        height = 3. * radius * self._to
 
-        delta = self._ym**2. * self._st2**2. - (self._to2 + self._st2) * (self._st2 * self._ym**2. - self._to2 * radius**2.)
+        #delta = self._ym**2. * self._st2**2. - (self._to2 + self._st2) * (self._st2 * self._ym**2. - self._to2 * radius**2.)
+        #sel = (delta > 0.) # will ignore the cases where there is only one solution, this should exclude points where radius is 0
+        #ye[sel] = ((self._ym[sel] * self._st2) + np.sqrt(delta[sel])) / (self._to2 + self._st2)
+        #ys[sel] = ((self._ym[sel] * self._st2) - np.sqrt(delta[sel])) / (self._to2 + self._st2)
+        #ze[sel] = self._st * (ye[sel] - self._ym[sel])
+        #zs[sel] = self._st * (ys[sel] - self._ym[sel])
+
+        delta = self._ym**2. * self._st2**2. * radius ** 4. - (height**2. + self._st2 * radius**2.) * (self._st2 * self._ym**2. * radius**2. - height**2. * radius**2.)
         sel = (delta > 0.) # will ignore the cases where there is only one solution, this should exclude points where radius is 0
-        ye[sel] = ((self._ym[sel] * self._st2) + np.sqrt(delta[sel])) / (self._to2 + self._st2)
-        ys[sel] = ((self._ym[sel] * self._st2) - np.sqrt(delta[sel])) / (self._to2 + self._st2)
-        ze[sel] = self._st * (self._ym[sel] - ye[sel])
-        zs[sel] = self._st * (self._ym[sel] - ys[sel])
+        ye[sel] = ((self._ym[sel] * self._st2 * radius[sel]**2.) + np.sqrt(delta[sel])) / (height[sel]**2. + self._st2 * radius[sel]**2.)
+        ys[sel] = ((self._ym[sel] * self._st2 * radius[sel]**2.) - np.sqrt(delta[sel])) / (height[sel]**2. + self._st2 * radius[sel]**2.)
+        ze[sel] = self._st * (ye[sel] - self._ym[sel])
+        zs[sel] = self._st * (ys[sel] - self._ym[sel])
+        xe[sel] = self._xm[sel]
 
-        return ye, ze, ys, zs, delta
+        return xe, ye, ze, ys, zs 
 
     def _get_cube(self):
         """
@@ -169,15 +179,15 @@ class Disk(object):
         """
         Get the entry and exit points for the upper and lower layers
         """
-        ye, ze, ys, zs, delta = self._get_sphere()
+        xe, ye, ze, ys, zs = self._get_sphere()
         #ye, ze, ys, zs = self._get_cube()
-        self._get_flux(ye, ze, ys, zs)
+        self._get_flux(xe, ye, ze, ys, zs)
         self._ismodel = True
 
     """
     Method to compute the emission between the entry and exit points.
     """
-    def _get_flux(self, ye, ze, ys, zs):
+    def _get_flux(self, xe, ye, ze, ys, zs):
         """
         Compute the azimuth angle in the disk midplane
         """
@@ -198,7 +208,7 @@ class Disk(object):
         # ze-zs is <0
         #fig = plt.figure(figsize=(7,7))
         #ax1 = fig.add_axes([0.16, 0.14, 0.8, 0.79])
-        #ax1.imshow(self._xm, origin = 'lower')
+        #ax1.imshow(r_ref, origin = 'lower')
         #plt.show()
         for i in range(self._nframe-1):
             """
@@ -225,7 +235,8 @@ class Disk(object):
             Compute the cosine of the scattering angle
             I need to make a selection where dist3d != 0, to avoid division by 0 when computing it.
             """
-            dist3d = np.sqrt(self._xm**2. + yi**2. + zi**2.)
+            #dist3d = np.sqrt(self._xm**2. + yi**2. + zi**2.)
+            dist3d = np.sqrt(xe**2. + yi**2. + zi**2.)
             sel3d = (dist3d > 0.)
             if self.theta is None:
                 costheta[sel3d] = (self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d]
@@ -244,7 +255,7 @@ class Disk(object):
             I also need to check if dist2d, the distance in the midplane, is null or not. If it is 0
             then it may yield to some problems in the exponent when computing the radial density profile.
             """
-            dist2d = np.sqrt(self._xm**2. + yi**2.)
+            dist2d = np.sqrt(xe**2. + yi**2.)
             sel2d = (dist2d > 0.)
             densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pout) + (dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pin))**(-.5)
             densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
@@ -263,17 +274,23 @@ class Disk(object):
             self.polarized[sel] += density[sel] * ppol[sel,0]
             self.polarized[~sel] += density[~sel] * ppol[~sel,1]
 
-
             #tmp = np.zeros(shape=(self._nx, self._nx))
-            #tmp[sel] = density[sel] * psca[sel,0]
-            #tmp[~sel] = density[~sel] * psca[~sel,0]
+            ##tmp[sel] = density[sel] * psca[sel,0]
+            ##tmp[~sel] = density[~sel] * psca[~sel,0]
+            ##tmp = (self._ss * yi - self._cs * zi) / dist3d
+            #tmp[sel2d] = dist2d[sel2d]
+            ##tmp[sel2d] = densr[sel2d]
 
             #fig = plt.figure(figsize=(7,7))
             #ax1 = fig.add_axes([0.0, 0.0, 1., 1.])
-            #ax1.imshow(zi, origin = 'lower', vmin = 0., vmax = 5.0013e-7, cmap = 'inferno')
+            ##ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = np.pi, cmap = 'inferno')
+            #ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = np.percentile(tmp, 99.9), cmap = 'inferno')
             #ax1.axis('off')
             #plt.savefig('debug/image_'+format(i,'04d')+'.png', edgecolor='black', dpi=100, facecolor='black')
+            #if i==0:
+                #plt.show()
             #plt.close()
+
     """
     Plot the images
     """
@@ -284,16 +301,14 @@ class Disk(object):
         if self._ismodel:
             fig = plt.figure(figsize=(13,6))
             ax1 = fig.add_axes([0.1, 0.12, 0.4, 0.8])
-            im = ax1.imshow(self.intensity, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap)
+            im = ax1.imshow(self.intensity, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.intensity, 1.), vmax = np.percentile(test.intensity, 99.9))
             ax1.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
             ax1.set_ylabel('$\Delta \delta$ [$^{\prime\prime}$]')
 
             ax2 = fig.add_axes([0.55, 0.12, 0.4, 0.8])
-            im = ax2.imshow(self.polarized, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap)
+            im = ax2.imshow(self.polarized, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.polarized, 1.), vmax = np.percentile(test.polarized, 99.9))
             ax2.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
             plt.show()
-            #print(np.percentile(self.intensity, 1.))
-            #print(np.percentile(self.intensity, 99.9))
 
     """
     Check the parameters that are passed as kwargs
@@ -361,9 +376,9 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':        
-    test = Disk()
+    test = Disk(nframe = 50)
     t0 = time.time()
-    test.compute_model(e = 0.0, incl = 88., PA = 90., a = 0.89, gsca = 0.0, gpol = 0.0, omega = 180., opang = 0.05, pin = 15., pout = -3.5)
+    test.compute_model(e = 0.3, incl = 88., PA = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     test.plot()
 
