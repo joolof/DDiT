@@ -75,7 +75,7 @@ The second dimension of the array is not necessarily always the north or south s
   <img width="700" src="screenshots/disk.gif">
 </p>
 
-The animation above showcases that the whole range of inclinations can be probed, and each image takes less than a few seconds to be computed (unfortunately, the compression to make the gif does not make justice to the real images). One should note though that in this animation, the scattered light phase function is slightly forward scattering (gsca =0.4), but the disk does not become much brighter as the inclination increases because the cuts are re-evaluated for each frame. 
+The animation above showcases that the whole range of inclinations can be probed, and each image takes less than a few seconds to be computed (unfortunately, the compression to make the gif does not make justice to the real images). As a matter of fact, you will see that the computing time strongly depends on the inclination, because for face-on disks, there are more pixels where the dust density is not null, while for edge-on disks, the vast majority of the pixels do not intercept the bounding box of the disk. Finally, as a small note, in this animation, the scattered light phase function is slightly forward scattering (`gsca =0.4`), but the disk does not become much brighter as the inclination increases because the cuts are re-evaluated for each frame. 
 
 ## References
 
