@@ -53,9 +53,18 @@ nframe = 50          # Number of frames (see above)
 Both values of `nframe` and `nx` should be integers, and `nx` should be an even number. Once the class is called for the first time, those parameters should not be changed, otherwise you may get some very strange results. Afterwards, the method `compute_model` has the following input parameters:
 
 ```python
-a = 0.85             # Size of the image in pixels
-incl = 60. # Size of on pixel in arcseconds
-PA = 112.          # Number of frames (see above)
+a = 0.85             # Semi-major axis of the disk in arcseconds
+incl = 60.           # Inclination, in degrees
+PA = 112.            # Position angle, in degrees
+pin = 5.0            # Inner slope of the density distribution (>0)
+pout = -15.0         # Outer slope of the density distribution (<0)
+e = 0.1              # Eccentricity
+omega = 85.          # Argument of periapsis, in degrees
+gsca = 0.5           # Heinyey-Greenstein coefficient for total intensity
+gpol = 0.5           # Heinyey-Greenstein coefficient for polarized intensity
+opang = 0.03         # Opening angle of the disk, in radians
+s11 = None           # Scattered light phase function
+s12 = None           # Polarized light phase function
 ```
 
 ## References

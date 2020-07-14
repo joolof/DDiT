@@ -41,7 +41,7 @@ class Disk(object):
         """
         Some trigonometry variables
         """
-        self._cs, self._ss, self._st, self._st2, self._to, self._to2 = 0., 0., 0., 0., 0., 0.
+        self._cs, self._ss, self._st, self._st2, self._to = 0., 0., 0., 0., 0.
         """
         The geometric parameters for the disk
         """
@@ -315,7 +315,6 @@ class Disk(object):
         self._st = self._cs / self._ss
         self._st2 = self._st**2.
         self._to = np.tan(self.opang)
-        self._to2 = self._to**2.
 
     """
     Print some error message and quit
@@ -328,9 +327,9 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':        
-    test = Disk(nframe = 100)
+    test = Disk(nframe = 50)
     t0 = time.time()
     test.compute_model(e = 0.1, incl = 69., PA = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
-    #test.plot()
+    test.plot()
 
