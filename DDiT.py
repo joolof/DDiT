@@ -45,7 +45,7 @@ class Disk(object):
         """
         The geometric parameters for the disk
         """
-        self.a, self.incl, self.PA, self.pin, self.pout, self.e, self.omega, self.opang = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04
+        self.a, self.incl, self.pa, self.pin, self.pout, self.e, self.omega, self.opang = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04
         """
         Parameters for the phase functions
         """
@@ -94,7 +94,7 @@ class Disk(object):
         INPUTS:
           - a: reference semi-major axis in arcseconds
           - incl: inclination in degrees
-          - PA: position angle in degrees
+          - pa: position angle in degrees
           - pin: inner slope
           - pout: outer slope
           - gsca: HG coefficient for total intensity
@@ -122,8 +122,8 @@ class Disk(object):
         """
         Project the disk according to the inclination and position angle
         """
-        self._xm = ((np.cos(self.PA) * self._Xin + np.sin(self.PA) * self._Yin))
-        self._ym = ((np.sin(self.PA) * self._Xin - np.cos(self.PA) * self._Yin)) / self._cs
+        self._xm = ((np.cos(self.pa) * self._Xin + np.sin(self.pa) * self._Yin))
+        self._ym = ((np.sin(self.pa) * self._Xin - np.cos(self.pa) * self._Yin)) / self._cs
         self.distance = np.sqrt(self._xm**2. + self._ym**2.)
         self.distance[self._cx, self._cx] = 1.
         self.scattering = np.arccos((self._ss * self._ym)/self.distance)
@@ -274,8 +274,8 @@ class Disk(object):
             self.a = kwargs['a']
         if 'incl' in kwargs:
             self.incl = kwargs['incl'] * np.pi / 180.
-        if 'PA' in kwargs:
-            self.PA = -kwargs['PA'] * np.pi / 180.
+        if 'pa' in kwargs:
+            self.pa = -kwargs['pa'] * np.pi / 180.
         if 'pin' in kwargs:
             self.pin = kwargs['pin']
         if 'pout' in kwargs:
@@ -329,7 +329,7 @@ class Disk(object):
 if __name__ == '__main__':        
     test = Disk(nframe = 50)
     t0 = time.time()
-    test.compute_model(e = 0.1, incl = 69., PA = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
+    test.compute_model(e = 0.1, incl = 69., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     test.plot()
 
