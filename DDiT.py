@@ -74,15 +74,8 @@ class Disk(object):
         radius = np.sqrt(radius)
         height = 3. * radius * self._to
 
-        #delta = self._ym**2. * self._st2**2. - (self._to2 + self._st2) * (self._st2 * self._ym**2. - self._to2 * radius**2.)
-        #sel = (delta > 0.) # will ignore the cases where there is only one solution, this should exclude points where radius is 0
-        #ye[sel] = ((self._ym[sel] * self._st2) + np.sqrt(delta[sel])) / (self._to2 + self._st2)
-        #ys[sel] = ((self._ym[sel] * self._st2) - np.sqrt(delta[sel])) / (self._to2 + self._st2)
-        #ze[sel] = self._st * (ye[sel] - self._ym[sel])
-        #zs[sel] = self._st * (ys[sel] - self._ym[sel])
-
         delta = self._ym**2. * self._st2**2. * radius ** 4. - (height**2. + self._st2 * radius**2.) * (self._st2 * self._ym**2. * radius**2. - height**2. * radius**2.)
-        sel = (delta > 0.) # will ignore the cases where there is only one solution, this should exclude points where radius is 0
+        sel = (delta > 0.) 
         ye[sel] = ((self._ym[sel] * self._st2 * radius[sel]**2.) + np.sqrt(delta[sel])) / (height[sel]**2. + self._st2 * radius[sel]**2.)
         ys[sel] = ((self._ym[sel] * self._st2 * radius[sel]**2.) - np.sqrt(delta[sel])) / (height[sel]**2. + self._st2 * radius[sel]**2.)
         ze[sel] = self._st * (ye[sel] - self._ym[sel])
@@ -90,48 +83,6 @@ class Disk(object):
         xe[sel] = self._xm[sel]
 
         return xe, ye, ze, ys, zs 
-
-    def _get_cube(self):
-        """
-        Get the entry and exit points of a rectangular cube
-        """
-        ye, ys = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
-        ze, zs = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
-        """
-        The maximum radius and maximum height
-        """
-        rmax = self._threshold**(1.e0 / self.pout) * self.a * (1.e0 + self.e) 
-        zmax = 3. * rmax * self._to
-        """
-        The upper layer
-        """
-        layer = self._ym + zmax * self._ti
-        sel = ((layer >= -rmax) & (layer <= rmax) & (np.abs(self._xm) <= rmax))
-        ye[sel] = layer[sel]
-        ze[sel] = zmax
-        """
-        The lower layer
-        """
-        layer = self._ym - zmax * self._ti
-        sel = ((layer >= -rmax) & (layer <= rmax) & (np.abs(self._xm) <= rmax))
-        ys[sel] = layer[sel]
-        zs[sel] = -zmax
-        """
-        The front layer
-        """
-        layer = -(self._ym + rmax) / self._ti
-        sel = ((layer >= -zmax) & (layer <= zmax) & (np.abs(self._xm) <= rmax))
-        zs[sel] = layer[sel]
-        ys[sel] = -rmax
-        """
-        The back layer
-        """
-        layer = (rmax - self._ym) / self._ti
-        sel = ((layer >= -zmax) & (layer <= zmax) & (np.abs(self._xm) <= rmax))
-        ze[sel] = layer[sel]
-        ye[sel] = rmax
-
-        return ye, ze, ys, zs
 
     """
     Compute the model for the total and polarized intensity.
@@ -180,7 +131,6 @@ class Disk(object):
         Get the entry and exit points for the upper and lower layers
         """
         xe, ye, ze, ys, zs = self._get_sphere()
-        #ye, ze, ys, zs = self._get_cube()
         self._get_flux(xe, ye, ze, ys, zs)
         self._ismodel = True
 
@@ -190,9 +140,9 @@ class Disk(object):
     def _get_flux(self, xe, ye, ze, ys, zs):
         """
         Compute the azimuth angle in the disk midplane
+        This will put the north side at 
         """
-        self.azimuth = np.arctan2(self._ym,self._xm)
-        azi_tmp = (self.azimuth + np.pi/2.) % (2. * np.pi) - np.pi
+        self.azimuth = (np.arctan2(self._ym,self._xm) + np.pi/2.) % (2. * np.pi) - np.pi
         """
         The volume of each cells
         The line of sight is divided as follows:
@@ -202,14 +152,6 @@ class Disk(object):
         And the volume of one cell is sqrt(Delta_z**2. + Delta_y**2) * pixelscale**2.
         """
         volume = np.sqrt(((ze-zs)**2. + (ye-ys)**2.))/(self._nframe-1.)*self._pixscale**2.
-        r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(self.azimuth + self.omega))
-
-        # ye-ys is >0
-        # ze-zs is <0
-        #fig = plt.figure(figsize=(7,7))
-        #ax1 = fig.add_axes([0.16, 0.14, 0.8, 0.79])
-        #ax1.imshow(r_ref, origin = 'lower')
-        #plt.show()
         for i in range(self._nframe-1):
             """
             Get the middle points of each cells.
@@ -232,10 +174,19 @@ class Disk(object):
             densz = np.zeros(shape=(self._nx, self._nx))
             density = np.zeros(shape=(self._nx, self._nx))
             """
+            To avoid some issues for very inclined disks, I need to re-evaluate
+            the azimuthal angles for each "frames", as well as the reference
+            radius, based on the azimuthal angle.
+
+            This azimuthal angle is the one in the midlpane because I need to compute the 
+            reference radius at the midplane.
+            """
+            az = np.arctan2(yi, xe)
+            r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(az + self.omega))
+            """
             Compute the cosine of the scattering angle
             I need to make a selection where dist3d != 0, to avoid division by 0 when computing it.
             """
-            #dist3d = np.sqrt(self._xm**2. + yi**2. + zi**2.)
             dist3d = np.sqrt(xe**2. + yi**2. + zi**2.)
             sel3d = (dist3d > 0.)
             if self.theta is None:
@@ -268,27 +219,28 @@ class Disk(object):
             azi_tmp = (self.azimuth + np.pi/2.) % (2. * np.pi) - np.pi
             This should put the angle at 0. along the minor axis of the disk and between -pi and +pi for both sides of the disk.
             """
-            sel = (azi_tmp <=0.) 
+            sel = (self.azimuth <=0.) 
             self.intensity[sel] += density[sel] * psca[sel,0]
             self.intensity[~sel] += density[~sel] * psca[~sel,1]
             self.polarized[sel] += density[sel] * ppol[sel,0]
             self.polarized[~sel] += density[~sel] * ppol[~sel,1]
 
             #tmp = np.zeros(shape=(self._nx, self._nx))
-            ##tmp[sel] = density[sel] * psca[sel,0]
-            ##tmp[~sel] = density[~sel] * psca[~sel,0]
-            ##tmp = (self._ss * yi - self._cs * zi) / dist3d
-            #tmp[sel2d] = dist2d[sel2d]
-            ##tmp[sel2d] = densr[sel2d]
+            #tmp[sel] = density[sel] * psca[sel,0]
+            #tmp[~sel] = density[~sel] * psca[~sel,1]
 
-            #fig = plt.figure(figsize=(7,7))
+            #xlim = self._cx * self._pixscale
+            #fig = plt.figure(figsize=(7,7 * 9./16.))
             #ax1 = fig.add_axes([0.0, 0.0, 1., 1.])
             ##ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = np.pi, cmap = 'inferno')
-            #ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = np.percentile(tmp, 99.9), cmap = 'inferno')
+            #ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = 3.5e-7, cmap = 'inferno', extent=[xlim, -xlim, -xlim, xlim])
+            #ax1.plot(0.,0., marker = '+', ms = 6 , color = 'w')
+            #ax1.set_xlim(xlim, -xlim)
+            #ax1.set_ylim(-xlim * 9./16., xlim * 9./16.)
             #ax1.axis('off')
             #plt.savefig('debug/image_'+format(i,'04d')+'.png', edgecolor='black', dpi=100, facecolor='black')
-            #if i==0:
-                #plt.show()
+            ##if i==0:
+                ##plt.show()
             #plt.close()
 
     """
@@ -376,9 +328,9 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':        
-    test = Disk(nframe = 50)
+    test = Disk(nframe = 100)
     t0 = time.time()
-    test.compute_model(e = 0.3, incl = 88., PA = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
+    test.compute_model(e = 0.1, incl = 69., PA = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
-    test.plot()
+    #test.plot()
 

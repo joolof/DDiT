@@ -30,6 +30,8 @@ disk.compute_model()
 ```
 But in that case, you have to make sure that you put the angles in radians (and check the method `_check_parameters` to see how the position angle is defined). Once the model is computed, you will find the images in the variables `disk.intensity` and `disk.polarized` for the total and polarized intensity. Furthermore, in `disk.scattering`, `disk.distance`, and `disk.azimuth` you will have access to the scattering angle, the distance to the star, and the azimuthal angle,  in the midplane.
 
+![screenshot](screenshots/animation.gif)
+
 ## References
 
 If you use this code for your research, feel free to contact me if you have any doubt or question, and please cite the following paper:
