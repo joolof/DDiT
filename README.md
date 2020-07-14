@@ -34,7 +34,7 @@ But in that case, you have to make sure that you put the angles in radians (and 
 
 ### Description of the code
 
-The way the code works is that it first finds a bounding box where most of the dust density distribution is contained. This bounding box, which is a 3D ellipse, is computed from the reference radius, the outer slope of the density distribution, and the eccentricity. Then, for each row of pixels perpendicular to the major axis of the disk (`x` axis), the `y` and `z` coordinates for the entry and exit points of the bounding box are estimated. The distance between the entry and exit points is divided in `nframe` images, and the 3D coordinates at the center of each cell are computed. The radial and vertical volumetric density are evaluated at the center of the grids, as well as the scattering angle, to compute the scattered light contribution. The final image is the sum of all those `nframe` images. The process is highlighted in the animation below.
+The way the code works is that it first finds a bounding box where most of the dust density distribution is contained. This bounding box, which is a 3D ellipse, is computed from the reference radius, the outer slope of the density distribution, and the eccentricity. Then, for each row of pixels perpendicular to the _projected_ major axis of the disk (`x` axis), the `y` and `z` coordinates for the entry and exit points of the bounding box are estimated. The distance between the entry and exit points is divided in `nframe` images, and the 3D coordinates at the center of each cell are computed. The radial and vertical volumetric density are evaluated at the center of the grids, as well as the scattering angle, to compute the scattered light contribution. The final image is the sum of all those `nframe` images. The process is highlighted in the animation below.
 
 <p align="center">
   <img width="700" src="screenshots/animation.gif">
@@ -69,11 +69,13 @@ s12 = None           # Polarized light phase function
 
 Most of the parameters are self-explanatory, except the last two, which allow the user to provide arrays for the shape of the phase function, either in total or polarized intensity. The arrays should have two dimensions, so that there can be a phase function for the north and south sides of the disk. For instance, if one wants to define an isotropic polarized phase function for both sides, then `s12` can be defined as `np.ones(shape=(nb,2))` where `nb` is the number of scattering angles between `0` and `180` degrees. If either `s11` or `s12` is provided, the code automatically define an array `disk.theta` containing the scattering angles (in radians). One should note that if the user only provides `s11` (or `s12`) the code will automatically assign an isotropic phase function for `s12` (or `s11`).
 
+The second dimension of the array is not necessarily always the north or south side, as it will depend on the position angle of the disk, so if you wish to use this feature you will have to make some tests to identify which side is which.
+
 <p align="center">
   <img width="700" src="screenshots/disk.gif">
 </p>
 
-One should note that in the animation above, the scattered light phase function is slightly forward scattering, but the disk does not become much brighter as the inclination increases because the cuts are re-evaluated for each frame. But as one can see, the whole range of inclinations can be probed, and each image takes less than two seconds to be computed.
+The animation above showcases that the whole range of inclinations can be probed, and each image takes less than a few seconds to be computed (unfortunately, the compression to make the gif does not make justice to the real images). One should note though that in this animation, the scattered light phase function is slightly forward scattering (gsca =0.4), but the disk does not become much brighter as the inclination increases because the cuts are re-evaluated for each frame. 
 
 ## References
 
