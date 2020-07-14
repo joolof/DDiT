@@ -55,7 +55,7 @@ Both values of `nframe` and `nx` should be integers, and `nx` should be an even 
 ```python
 a = 0.85             # Semi-major axis of the disk in arcseconds
 incl = 60.           # Inclination, in degrees
-PA = 112.            # Position angle, in degrees
+pa = 112.            # Position angle, in degrees
 pin = 5.0            # Inner slope of the density distribution (>0)
 pout = -15.0         # Outer slope of the density distribution (<0)
 e = 0.1              # Eccentricity
@@ -66,6 +66,8 @@ opang = 0.03         # Opening angle of the disk, in radians
 s11 = None           # Scattered light phase function
 s12 = None           # Polarized light phase function
 ```
+
+Most of the parameters are self-explanatory, except the last two, which allow the user to provide arrays for the shape of the phase function, either in total or polarized intensity.
 
 ## References
 
