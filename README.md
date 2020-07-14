@@ -67,7 +67,7 @@ s11 = None           # Scattered light phase function
 s12 = None           # Polarized light phase function
 ```
 
-Most of the parameters are self-explanatory, except the last two, which allow the user to provide arrays for the shape of the phase function, either in total or polarized intensity.
+Most of the parameters are self-explanatory, except the last two, which allow the user to provide arrays for the shape of the phase function, either in total or polarized intensity. Both arrays should have two dimensions, so that there can be a phase function for the north and south sides of the disk. For instance, if one wants to define an isotropic polarized phase function for both sides, then `s12` can be defined as `np.ones(shape=(nb,2))` where `nb` is the number of scattering angle between `0` and `180` degrees. If either `s11` or `s12` is provided, the code automatically define an array `disk.theta` containing the scattering angles. One should note that if the user only provides `s11` (or `s12`) the code will automatically assign an isotropic phase function for `s12` (or `s11`).
 
 ## References
 
