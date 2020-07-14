@@ -73,6 +73,8 @@ Most of the parameters are self-explanatory, except the last two, which allow th
   <img width="700" src="screenshots/disk.gif">
 </p>
 
+One should note that in the animation above, the scattered light phase function is slightly forward scattering, but the disk does not become much brighter as the inclination increases because the cuts are re-evaluated for each frame. But as one can see, the whole range of inclinations can be probed, and each image takes less than two seconds to be computed.
+
 ## References
 
 If you use this code for your research, feel free to contact me if you have any doubt or question, and please cite the following paper:
