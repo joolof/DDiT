@@ -5,7 +5,7 @@
 
 A Python code to (quickly) produce synthetic images of debris disks, in total and polarized intensity using the Henyey-Greenstein approximation. In the model, the disk is not infinitely flat and it should work for any inclinations except for `i=0` or `i=90` (otherwise there may be some division by zero).
 
-### Introduction
+### Installation and first try
 
 To use the module, download the python files above and install it with the following (using the `develop` option so that any further changes are automatically included):
 ```python
@@ -39,6 +39,9 @@ The way the code works is that it first finds a bounding box where most of the d
 <p align="center">
   <img width="700" src="screenshots/animation.gif">
 </p>
+
+### Input parameters
+
 
 
 ## References
