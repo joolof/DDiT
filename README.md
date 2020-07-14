@@ -42,7 +42,21 @@ The way the code works is that it first finds a bounding box where most of the d
 
 ### Input parameters
 
+The `Disk` class has three possible parameters which are the following:
 
+```python
+nx = 300             # Size of the image in pixels
+pixelscale = 0.01226 # Size of on pixel in arcseconds
+nframe = 50          # Number of frames (see above)
+```
+
+Both values of `nframe` and `nx` should be integers, and `nx` should be an even number. Once the class is called for the first time, those parameters should not be changed, otherwise you may get some very strange results. Afterwards, the method `compute_model` has the following input parameters:
+
+```python
+a = 0.85             # Size of the image in pixels
+incl = 60. # Size of on pixel in arcseconds
+PA = 112.          # Number of frames (see above)
+```
 
 ## References
 
