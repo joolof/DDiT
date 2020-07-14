@@ -7,16 +7,20 @@ np.seterr(over='ignore')
 # -----------------------------------------------------------
 class Disk(object):
     """
-    docstring for RT
+    Class to compute images of debris disks, in polarized light and total intensity.
     """
     def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50):
         """
-        description
+        Class to compute synthetic images of debris disks. To compute a model, simply do the following:
+        > disk = Disk()
+        > disk.compute_model(a = 0.8, e = 0.1, incl = 60.)
+
+        And the images will be stored in disk.intensity and disk.polarized. More details in the README.md file.
         """
         if type(nx) is not int: self._error_msg('The parameter \'nx\' should be an integer ')
         if type(nframe) is not int: self._error_msg('The parameter \'nframe\' should be an integer ')
         if nframe%2 == 1:
-            print('It is probably better if \'nframe\' is an even number, to sample to midplace properly.')
+            print('It is probably better if \'nframe\' is an even number.')
         self._threshold = 5.e-2
         self._nx = nx
         self._cx = self._nx//2
@@ -43,7 +47,7 @@ class Disk(object):
         """
         self._cs, self._ss, self._st, self._st2, self._to = 0., 0., 0., 0., 0.
         """
-        The geometric parameters for the disk
+        The geometric parameters for the disk, with some default values.
         """
         self.a, self.incl, self.pa, self.pin, self.pout, self.e, self.omega, self.opang = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04
         """
@@ -51,8 +55,6 @@ class Disk(object):
         """
         self.gsca, self.gpol = 0., 0.
         self.theta, self.s11, self.s12 = None, None, None
-
-        self._ismodel = False
 
     """
     Get the entry and exit points of an ellipse in the [y,z] plane
@@ -126,23 +128,22 @@ class Disk(object):
         self._ym = ((np.sin(self.pa) * self._Xin - np.cos(self.pa) * self._Yin)) / self._cs
         self.distance = np.sqrt(self._xm**2. + self._ym**2.)
         self.distance[self._cx, self._cx] = 1.
+        """
+        Compute the azimuth and scattering angles in the disk midplane, so
+        that they can be used outside of the class.
+        """
+        self.azimuth = (np.arctan2(self._ym,self._xm) + np.pi/2.) % (2. * np.pi) - np.pi
         self.scattering = np.arccos((self._ss * self._ym)/self.distance)
         """
         Get the entry and exit points for the upper and lower layers
         """
         xe, ye, ze, ys, zs = self._get_sphere()
         self._get_flux(xe, ye, ze, ys, zs)
-        self._ismodel = True
 
     """
     Method to compute the emission between the entry and exit points.
     """
     def _get_flux(self, xe, ye, ze, ys, zs):
-        """
-        Compute the azimuth angle in the disk midplane
-        This will put the north side at 
-        """
-        self.azimuth = (np.arctan2(self._ym,self._xm) + np.pi/2.) % (2. * np.pi) - np.pi
         """
         The volume of each cells
         The line of sight is divided as follows:
@@ -213,11 +214,6 @@ class Disk(object):
             density[sel3d] = densr[sel3d] * densz[sel3d] * volume[sel3d] / (dist3d[sel3d]**2.)
             """
             Differentiate the north and south sides of the disk
-            North side is where azi_tmp is negative.
-
-            When doing:
-            azi_tmp = (self.azimuth + np.pi/2.) % (2. * np.pi) - np.pi
-            This should put the angle at 0. along the minor axis of the disk and between -pi and +pi for both sides of the disk.
             """
             sel = (self.azimuth <=0.) 
             self.intensity[sel] += density[sel] * psca[sel,0]
@@ -250,17 +246,16 @@ class Disk(object):
         """
         Method to make some plot
         """
-        if self._ismodel:
-            fig = plt.figure(figsize=(13,6))
-            ax1 = fig.add_axes([0.1, 0.12, 0.4, 0.8])
-            im = ax1.imshow(self.intensity, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.intensity, 1.), vmax = np.percentile(test.intensity, 99.9))
-            ax1.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
-            ax1.set_ylabel('$\Delta \delta$ [$^{\prime\prime}$]')
+        fig = plt.figure(figsize=(13,6))
+        ax1 = fig.add_axes([0.1, 0.12, 0.4, 0.8])
+        im = ax1.imshow(self.intensity, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.intensity, 1.), vmax = np.percentile(test.intensity, 99.9))
+        ax1.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
+        ax1.set_ylabel('$\Delta \delta$ [$^{\prime\prime}$]')
 
-            ax2 = fig.add_axes([0.55, 0.12, 0.4, 0.8])
-            im = ax2.imshow(self.polarized, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.polarized, 1.), vmax = np.percentile(test.polarized, 99.9))
-            ax2.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
-            plt.show()
+        ax2 = fig.add_axes([0.55, 0.12, 0.4, 0.8])
+        im = ax2.imshow(self.polarized, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.polarized, 1.), vmax = np.percentile(test.polarized, 99.9))
+        ax2.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
+        plt.show()
 
     """
     Check the parameters that are passed as kwargs
@@ -327,9 +322,9 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':        
-    test = Disk(nframe = 50)
+    disk = Disk(nframe = 50)
     t0 = time.time()
-    test.compute_model(e = 0.1, incl = 69., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
+    disk.compute_model(e = 0.1, incl = 69., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 180., opang = 0.05, pin = 20.0, pout = -5.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
-    test.plot()
+    disk.plot()
 
