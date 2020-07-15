@@ -18,6 +18,7 @@ Given that the code only uses matplotlib and numpy, it should work with python2 
 from DDiT import Disk
 disk = Disk()
 disk.compute_model(a = 0.6, incl = 60., e = 0.3)
+disk.plot()
 ```
 
 Alternatively, if you do not want to pass the arguments to the function (let's say you want to do some MCMC and want some liberty in choosing the free parameters), you can also do the following:
