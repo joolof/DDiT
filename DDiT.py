@@ -21,7 +21,7 @@ class Disk(object):
         if type(nframe) is not int: self._error_msg('The parameter \'nframe\' should be an integer ')
         if nframe%2 == 1:
             print('It is probably better if \'nframe\' is an even number.')
-        self._threshold = 5.e-2
+        self._threshold = 1.e-2
         self._nx = nx
         self._cx = self._nx//2
         self._nframe = nframe
@@ -324,7 +324,7 @@ class Disk(object):
 if __name__ == '__main__':        
     disk = Disk(nframe = 50)
     t0 = time.time()
-    disk.compute_model(e = 0.1, incl = 76., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5)
+    disk.compute_model(e = 0.1, incl = 78., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     disk.plot()
 
