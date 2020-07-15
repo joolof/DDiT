@@ -80,8 +80,7 @@ The animation above showcases that the whole range of inclinations can be probed
 ## References
 
 If you use this code for your research, feel free to contact me if you have any doubt or question, and please cite the following paper:
-```
+
 [Olofsson et al. (2020)](https://ui.adsabs.harvard.edu/abs/2020arXiv200608595O/abstract)
 _"The challenge of measuring the phase function of debris disks. Application to HR\,4796"_
-```
 
