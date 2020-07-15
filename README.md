@@ -25,8 +25,8 @@ Alternatively, if you do not want to pass the arguments to the function (let's s
 ```python
 from DDiT import Disk
 disk = Disk()
-disk.a = 0.6 # in units of arcseconds
-disk.i = 60. * np.pi / 180.
+disk.a = 0.6                 # in units of arcseconds
+disk.i = 60. * np.pi / 180.  # if defined from outside the method, has to be in radians
 disk.e = 0.3
 disk.compute_model()
 ```
@@ -46,7 +46,7 @@ The `Disk` class has three possible parameters which are the following:
 
 ```python
 nx = 300             # Size of the image in pixels
-pixelscale = 0.01226 # Size of on pixel in arcseconds
+pixelscale = 0.01226 # Size of one pixel in arcseconds
 nframe = 50          # Number of frames (see above)
 ```
 
@@ -75,7 +75,7 @@ The second dimension of the array is not necessarily always the north or south s
   <img width="700" src="screenshots/disk.gif">
 </p>
 
-The animation above showcases that the whole range of inclinations can be probed, and each image takes less than a few seconds to be computed (unfortunately, the compression to make the gif does not make justice to the real images). As a matter of fact, you will see that the computing time strongly depends on the inclination, because for face-on disks, there are more pixels where the dust density is not null, while for edge-on disks, the vast majority of the pixels do not intercept the bounding box of the disk. Finally, as a small note, in this animation, the scattered light phase function is slightly forward scattering (`gsca = 0.4`), but the disk does not become much brighter as the inclination increases because the cuts are re-evaluated for each frame. 
+The animation above showcases that the whole range of inclinations can be probed, and each image takes less than a few seconds to be computed. As a matter of fact, you will see that the computing time strongly depends on the inclination, because for face-on disks, there are more pixels where the dust density is not null, while for edge-on disks, the vast majority of the pixels do not intercept the bounding box of the disk. Finally, as a small note, in this animation, the scattered light phase function is slightly forward scattering (`gsca = 0.4`), but the disk does not become much brighter as the inclination increases because the cuts are re-evaluated for each frame. 
 
 ## References
 

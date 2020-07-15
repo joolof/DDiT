@@ -67,15 +67,22 @@ class Disk(object):
         ze, zs = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
         xe = np.zeros(shape=(self._nx, self._nx))
         """
-        it should be a * (1 - e**2) / (1-e) which simplyfies as a*(1+e)
+        rmax is the maximum radius that should contain most of the density of the disk.
+        It should be a * (1 - e**2) / (1-e) which simplyfies as a*(1+e)
         """
         rmax = self._threshold**(1.e0 / self.pout) * self.a * (1.e0 + self.e) 
-        #print(rmax)
         radius = rmax**2. - self._xm**2.
         radius[(radius<0)] = 0.
         radius = np.sqrt(radius)
         height = 3. * radius * self._to
-
+        """
+        Here I am solving the intersections of two equations:
+          + (y/radius)**2. + (z/height)**2. = 1.
+          + z = (y - ym) / tan(inclination)
+        The first one is an ellipse and the second one is the line of sight intercepting the midplane at ym.
+        Replacing z in the first equation with the expression from the second equation yields a second 
+        degree equation.
+        """
         delta = self._ym**2. * self._st2**2. * radius ** 4. - (height**2. + self._st2 * radius**2.) * (self._st2 * self._ym**2. * radius**2. - height**2. * radius**2.)
         sel = (delta > 0.) 
         ye[sel] = ((self._ym[sel] * self._st2 * radius[sel]**2.) + np.sqrt(delta[sel])) / (height[sel]**2. + self._st2 * radius[sel]**2.)
@@ -100,7 +107,7 @@ class Disk(object):
           - pin: inner slope
           - pout: outer slope
           - gsca: HG coefficient for total intensity
-          - gpola: HG coefficient for polarized intensity
+          - gpol: HG coefficient for polarized intensity
           - e: eccentricity
           - omega: argument of pericenter in degrees
           - opang: opening angle of the disk
@@ -113,7 +120,7 @@ class Disk(object):
         """
         self._check_parameters(kwargs)
         """
-        Compute some trigonometric things
+        Compute some cos, sin, and tan
         """
         self._trigonometry()
         """
@@ -127,10 +134,12 @@ class Disk(object):
         self._xm = ((np.cos(self.pa) * self._Xin + np.sin(self.pa) * self._Yin))
         self._ym = ((np.sin(self.pa) * self._Xin - np.cos(self.pa) * self._Yin)) / self._cs
         self.distance = np.sqrt(self._xm**2. + self._ym**2.)
-        self.distance[self._cx, self._cx] = 1.
+        self.distance[self._cx, self._cx] = 1. # This is to avoid a division by zero when computing the scattering angle in the midplane.
         """
         Compute the azimuth and scattering angles in the disk midplane, so
         that they can be used outside of the class.
+
+        The azimuth angle should be zero along the projected minor axis of the disk.
         """
         self.azimuth = (np.arctan2(self._ym,self._xm) + np.pi/2.) % (2. * np.pi) - np.pi
         self.scattering = np.arccos((self._ss * self._ym)/self.distance)
@@ -138,6 +147,9 @@ class Disk(object):
         Get the entry and exit points for the upper and lower layers
         """
         xe, ye, ze, ys, zs = self._get_sphere()
+        """
+        Compute the final image
+        """
         self._get_flux(xe, ye, ze, ys, zs)
 
     """
@@ -162,7 +174,7 @@ class Disk(object):
             """
             Define variables for the phase function, that need to be re-initialized for every iteration
             This slows down the code a bit, but it is more accurate and prevents some unfortunate 
-            NaNs in some cases (especially if the position angle is 0 or 90 degrees.
+            NaNs in some cases (especially if the position angle is 0 degrees for instance.
 
             I had tried to define them once, and set them to 0., but that did not improve the time.
             For clarity, I leave it as it is now.
@@ -176,11 +188,10 @@ class Disk(object):
             density = np.zeros(shape=(self._nx, self._nx))
             """
             To avoid some issues for very inclined disks, I need to re-evaluate
-            the azimuthal angles for each "frames", as well as the reference
+            the azimuthal angles for each frames, as well as the reference
             radius, based on the azimuthal angle.
 
-            This azimuthal angle is the one in the midlpane because I need to compute the 
-            reference radius at the midplane.
+            This azimuthal angle is the one in the midlpane.
             """
             az = np.arctan2(yi, xe)
             r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(az + self.omega))
@@ -192,11 +203,17 @@ class Disk(object):
             sel3d = (dist3d > 0.)
             if self.theta is None:
                 costheta[sel3d] = (self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d]
-                psca[sel3d,0] = (1.e0 - self.gsca**2.) / (4. * np.pi * (1.e0 + self.gsca**2. - 2. * self.gsca * costheta[sel3d])**(1.5))
-                psca[sel3d,1] = (1.e0 - self.gsca**2.) / (4. * np.pi * (1.e0 + self.gsca**2. - 2. * self.gsca * costheta[sel3d])**(1.5))
-                ppol[sel3d,0] = (1.e0 - self.gpol**2.) / (4. * np.pi * (1.e0 + self.gpol**2. - 2. * self.gpol * costheta[sel3d])**(1.5)) * (1.e0 - costheta[sel3d]**2.) / (1.e0 + costheta[sel3d]**2.)
-                ppol[sel3d,1] = (1.e0 - self.gpol**2.) / (4. * np.pi * (1.e0 + self.gpol**2. - 2. * self.gpol * costheta[sel3d])**(1.5)) * (1.e0 - costheta[sel3d]**2.) / (1.e0 + costheta[sel3d]**2.)
+                hg = (1.e0 - self.gsca**2.) / (4. * np.pi * (1.e0 + self.gsca**2. - 2. * self.gsca * costheta[sel3d])**(1.5))
+                phg = (1.e0 - self.gpol**2.) / (4. * np.pi * (1.e0 + self.gpol**2. - 2. * self.gpol * costheta[sel3d])**(1.5)) * (1.e0 - costheta[sel3d]**2.) / (1.e0 + costheta[sel3d]**2.)
+                psca[sel3d,0] = hg
+                psca[sel3d,1] = hg
+                ppol[sel3d,0] = phg
+                ppol[sel3d,1] = phg
             else:
+                """
+                The interpolation method needs self.theta to be in increasing order, so I
+                cannot use costheta directly.
+                """
                 theta[sel3d] = np.arccos((self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d])
                 psca[sel3d,0] = np.interp(theta[sel3d], self.theta, self.s11[:,0])
                 psca[sel3d,1] = np.interp(theta[sel3d], self.theta, self.s11[:,1])
@@ -220,7 +237,9 @@ class Disk(object):
             self.intensity[~sel] += density[~sel] * psca[~sel,1]
             self.polarized[sel] += density[sel] * ppol[sel,0]
             self.polarized[~sel] += density[~sel] * ppol[~sel,1]
-
+            """
+            Some debugging plots
+            """
             #tmp = np.zeros(shape=(self._nx, self._nx))
             #tmp[sel] = density[sel] * psca[sel,0]
             #tmp[~sel] = density[~sel] * psca[~sel,1]
@@ -228,7 +247,6 @@ class Disk(object):
             #xlim = self._cx * self._pixscale
             #fig = plt.figure(figsize=(7,7 * 9./16.))
             #ax1 = fig.add_axes([0.0, 0.0, 1., 1.])
-            ##ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = np.pi, cmap = 'inferno')
             #ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = 3.5e-7, cmap = 'inferno', extent=[xlim, -xlim, -xlim, xlim])
             #ax1.plot(0.,0., marker = '+', ms = 6 , color = 'w')
             #ax1.set_xlim(xlim, -xlim)
@@ -262,8 +280,7 @@ class Disk(object):
     """
     def _check_parameters(self, kwargs):
         """
-        Check parameters that are being passed and make 
-        some consistency checks for the inclination
+        Check parameters that are being passed
         """
         if 'a' in kwargs:
             self.a = kwargs['a']
@@ -306,7 +323,6 @@ class Disk(object):
         if self.incl == np.pi/2.:
             self.incl = 89.9 * np.pi / 180.
         self._cs, self._ss = np.cos(self.incl), np.sin(self.incl)
-        self._ti = np.tan(self.incl)
         self._st = self._cs / self._ss
         self._st2 = self._st**2.
         self._to = np.tan(self.opang)
