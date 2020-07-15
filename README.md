@@ -17,7 +17,7 @@ Given that the code only uses matplotlib and numpy, it should work with python2 
 ```python
 from DDiT import Disk
 disk = Disk()
-disk.compute_model(a = 0.6, i = 60., e = 0.3)
+disk.compute_model(a = 0.6, incl = 60., e = 0.3)
 ```
 
 Alternatively, if you do not want to pass the arguments to the function (let's say you want to do some MCMC and want some liberty in choosing the free parameters), you can also do the following:
@@ -26,7 +26,7 @@ Alternatively, if you do not want to pass the arguments to the function (let's s
 from DDiT import Disk
 disk = Disk()
 disk.a = 0.6                 # in units of arcseconds
-disk.i = 60. * np.pi / 180.  # if defined from outside the method, has to be in radians
+disk.incl = 60. * np.pi / 180.  # if defined from outside the method, has to be in radians
 disk.e = 0.3
 disk.compute_model()
 ```
