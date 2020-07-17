@@ -4,12 +4,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 # -----------------------------------------------------------
 np.seterr(over='ignore')
+# -----------------------------------------------------------------------------
+# Define some constants
+# -----------------------------------------------------------------------------
+CC = 2.9979e+14     # in microns/s 
+HH = 6.6262e-27
+KK = 1.3807e-16
 # -----------------------------------------------------------
 class Disk(object):
     """
     Class to compute images of debris disks, in polarized light and total intensity.
     """
-    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50):
+    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None):
         """
         Class to compute synthetic images of debris disks. To compute a model, simply do the following:
         > disk = Disk()
@@ -17,15 +23,23 @@ class Disk(object):
 
         And the images will be stored in disk.intensity and disk.polarized. More details in the README.md file.
         """
+
+        """
+        Some checks on the input parameters
+        """
         if type(nx) is not int: self._error_msg('The parameter \'nx\' should be an integer ')
         if type(nframe) is not int: self._error_msg('The parameter \'nframe\' should be an integer ')
         if nframe%2 == 1:
             print('It is probably better if \'nframe\' is an even number.')
+        if ((thermal) and (dpc is None)):
+            self._error_msg('To compute thermal images, you need to provide a distance \'dpc\' in pc. This is because of the way the T(r) is defined.')
         self._threshold = 1.e-2
         self._nx = nx
         self._cx = self._nx//2
         self._nframe = nframe
         self._pixscale = pixscale
+        self._thermal = thermal
+        self._dpc = dpc
         self._xlim = self._cx * self._pixscale
         self._Xin, self._Yin = (np.mgrid[0:self._nx, 0:self._nx] - self._cx) * self._pixscale
         self._xm, self._ym = np.zeros(shape=(self._nx, self._nx)), np.zeros(shape=(self._nx, self._nx))
@@ -55,6 +69,10 @@ class Disk(object):
         """
         self.gsca, self.gpol = 0., 0.
         self.theta, self.s11, self.s12 = None, None, None
+        """
+        Parameters for the thermal images
+        """
+        self._nu = None
 
     """
     Get the entry and exit points of an ellipse in the [y,z] plane
@@ -167,95 +185,112 @@ class Disk(object):
         volume = np.sqrt(((ze-zs)**2. + (ye-ys)**2.))/(self._nframe-1.)*self._pixscale**2.
         for i in range(self._nframe-1):
             """
-            Get the middle points of each cells.
-            """
-            zi = zs + (ze - zs) * (i+0.5) / (self._nframe-1)
-            yi = ys + (ye - ys) * (i+0.5) / (self._nframe-1)
-            """
-            Define variables for the phase function, that need to be re-initialized for every iteration
+            Define some variables, that need to be re-initialized for every iteration
             This slows down the code a bit, but it is more accurate and prevents some unfortunate 
             NaNs in some cases (especially if the position angle is 0 degrees for instance.
 
             I had tried to define them once, and set them to 0., but that did not improve the time.
             For clarity, I leave it as it is now.
             """
-            psca = np.zeros(shape=(self._nx, self._nx, 2))
-            ppol = np.zeros(shape=(self._nx, self._nx, 2))
-            theta = np.zeros(shape=(self._nx, self._nx))
-            costheta = np.zeros(shape=(self._nx, self._nx))
             densr = np.zeros(shape=(self._nx, self._nx))
             densz = np.zeros(shape=(self._nx, self._nx))
-            density = np.zeros(shape=(self._nx, self._nx))
             """
-            To avoid some issues for very inclined disks, I need to re-evaluate
-            the azimuthal angles for each frames, as well as the reference
-            radius, based on the azimuthal angle.
-
-            This azimuthal angle is the one in the midlpane.
+            Get the middle points of each cells.
             """
-            az = np.arctan2(yi, xe)
-            r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(az + self.omega))
+            zi = zs + (ze - zs) * (i+0.5) / (self._nframe-1)
+            yi = ys + (ye - ys) * (i+0.5) / (self._nframe-1)
             """
-            Compute the cosine of the scattering angle
-            I need to make a selection where dist3d != 0, to avoid division by 0 when computing it.
-            """
-            dist3d = np.sqrt(xe**2. + yi**2. + zi**2.)
-            sel3d = (dist3d > 0.)
-            if self.theta is None:
-                costheta[sel3d] = (self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d]
-                hg = (1.e0 - self.gsca**2.) / (4. * np.pi * (1.e0 + self.gsca**2. - 2. * self.gsca * costheta[sel3d])**(1.5))
-                phg = (1.e0 - self.gpol**2.) / (4. * np.pi * (1.e0 + self.gpol**2. - 2. * self.gpol * costheta[sel3d])**(1.5)) * (1.e0 - costheta[sel3d]**2.) / (1.e0 + costheta[sel3d]**2.)
-                psca[sel3d,0] = hg
-                psca[sel3d,1] = hg
-                ppol[sel3d,0] = phg
-                ppol[sel3d,1] = phg
-            else:
-                """
-                The interpolation method needs self.theta to be in increasing order, so I
-                cannot use costheta directly.
-                """
-                theta[sel3d] = np.arccos((self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d])
-                psca[sel3d,0] = np.interp(theta[sel3d], self.theta, self.s11[:,0])
-                psca[sel3d,1] = np.interp(theta[sel3d], self.theta, self.s11[:,1])
-                ppol[sel3d,0] = np.interp(theta[sel3d], self.theta, self.s12[:,0])
-                ppol[sel3d,1] = np.interp(theta[sel3d], self.theta, self.s12[:,1])
-            """
-            Define the density structure
-            I also need to check if dist2d, the distance in the midplane, is null or not. If it is 0
-            then it may yield to some problems in the exponent when computing the radial density profile.
+            Compute the 2D and 3D distances, with their respective
+            selection where they are different than 0
             """
             dist2d = np.sqrt(xe**2. + yi**2.)
             sel2d = (dist2d > 0.)
+            dist3d = np.sqrt(xe**2. + yi**2. + zi**2.)
+            sel3d = (dist3d > 0.)
+            """
+            Define the radial and vertical density structure. 
+            For the radial one, I need the azimuthal angle at the midplane, which is np.arctan2(yi, xe)
+            """
+            r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(np.arctan2(yi, xe) + self.omega))
             densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pout) + (dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pin))**(-.5)
             densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
-            density[sel3d] = densr[sel3d] * densz[sel3d] * volume[sel3d] / (dist3d[sel3d]**2.)
-            """
-            Differentiate the north and south sides of the disk
-            """
-            sel = (self.azimuth <=0.) 
-            self.intensity[sel] += density[sel] * psca[sel,0]
-            self.intensity[~sel] += density[~sel] * psca[~sel,1]
-            self.polarized[sel] += density[sel] * ppol[sel,0]
-            self.polarized[~sel] += density[~sel] * ppol[~sel,1]
-            """
-            Some debugging plots
-            """
-            #tmp = np.zeros(shape=(self._nx, self._nx))
-            #tmp[sel] = density[sel] * psca[sel,0]
-            #tmp[~sel] = density[~sel] * psca[~sel,1]
+            if self._thermal:
+                temperature = np.zeros(shape=(self._nx, self._nx))
+                expterm = np.zeros(shape=(self._nx, self._nx))
+                bplanck = np.zeros(shape=(self._nx, self._nx))
+                """
+                Following Eq. 3 of Wyatt 2008, without the stellar luminosity
+                """
+                temperature[sel3d] = 278.3 / np.sqrt(dist3d[sel3d] * self._dpc)
+                expterm[sel3d] = np.exp(self._nu * HH / KK / temperature[sel3d])
+                bplanck[sel3d] = 2. * HH * self._nu**3. / (expterm[sel3d]-1.0) / (CC * CC)
+                self.intensity[sel3d] += densr[sel3d] * densz[sel3d] * volume[sel3d] * bplanck[sel3d]
+            else:
+                psca = np.zeros(shape=(self._nx, self._nx, 2))
+                ppol = np.zeros(shape=(self._nx, self._nx, 2))
+                theta = np.zeros(shape=(self._nx, self._nx))
+                costheta = np.zeros(shape=(self._nx, self._nx))
+                density = np.zeros(shape=(self._nx, self._nx))
+                """
+                Compute the cosine of the scattering angle
+                I need to make a selection where dist3d != 0, to avoid division by 0 when computing it.
+                """
+                if self.theta is None:
+                    costheta[sel3d] = (self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d]
+                    hg = (1.e0 - self.gsca**2.) / (4. * np.pi * (1.e0 + self.gsca**2. - 2. * self.gsca * costheta[sel3d])**(1.5))
+                    phg = (1.e0 - self.gpol**2.) / (4. * np.pi * (1.e0 + self.gpol**2. - 2. * self.gpol * costheta[sel3d])**(1.5)) * (1.e0 - costheta[sel3d]**2.) / (1.e0 + costheta[sel3d]**2.)
+                    psca[sel3d,0] = hg
+                    psca[sel3d,1] = hg
+                    ppol[sel3d,0] = phg
+                    ppol[sel3d,1] = phg
+                else:
+                    """
+                    The interpolation method needs self.theta to be in increasing order, so I
+                    cannot use costheta directly.
+                    """
+                    theta[sel3d] = np.arccos((self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d])
+                    psca[sel3d,0] = np.interp(theta[sel3d], self.theta, self.s11[:,0])
+                    psca[sel3d,1] = np.interp(theta[sel3d], self.theta, self.s11[:,1])
+                    ppol[sel3d,0] = np.interp(theta[sel3d], self.theta, self.s12[:,0])
+                    ppol[sel3d,1] = np.interp(theta[sel3d], self.theta, self.s12[:,1])
+                """
+                This is the number density for the scatterd light images
+                """
+                density[sel3d] = densr[sel3d] * densz[sel3d] * volume[sel3d] / (dist3d[sel3d]**2.)
+                """
+                Differentiate the north and south sides of the disk
+                """
+                sel = (self.azimuth <=0.) 
+                self.intensity[sel] += density[sel] * psca[sel,0]
+                self.intensity[~sel] += density[~sel] * psca[~sel,1]
+                self.polarized[sel] += density[sel] * ppol[sel,0]
+                self.polarized[~sel] += density[~sel] * ppol[~sel,1]
+                """
+                Some debugging plots
+                """
+                #tmp = np.zeros(shape=(self._nx, self._nx))
+                #tmp[sel] = density[sel] * psca[sel,0]
+                #tmp[~sel] = density[~sel] * psca[~sel,1]
 
-            #xlim = self._cx * self._pixscale
-            #fig = plt.figure(figsize=(7,7 * 9./16.))
-            #ax1 = fig.add_axes([0.0, 0.0, 1., 1.])
-            #ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = 3.5e-7, cmap = 'inferno', extent=[xlim, -xlim, -xlim, xlim])
-            #ax1.plot(0.,0., marker = '+', ms = 6 , color = 'w')
-            #ax1.set_xlim(xlim, -xlim)
-            #ax1.set_ylim(-xlim * 9./16., xlim * 9./16.)
-            #ax1.axis('off')
-            #plt.savefig('debug/image_'+format(i,'04d')+'.png', edgecolor='black', dpi=100, facecolor='black')
-            ##if i==0:
-                ##plt.show()
-            #plt.close()
+                #xlim = self._cx * self._pixscale
+                #fig = plt.figure(figsize=(7,7 * 9./16.))
+                #ax1 = fig.add_axes([0.0, 0.0, 1., 1.])
+                #ax1.imshow(tmp, origin = 'lower', vmin = 0., vmax = 3.5e-7, cmap = 'inferno', extent=[xlim, -xlim, -xlim, xlim])
+                #ax1.plot(0.,0., marker = '+', ms = 6 , color = 'w')
+                #ax1.set_xlim(xlim, -xlim)
+                #ax1.set_ylim(-xlim * 9./16., xlim * 9./16.)
+                #ax1.axis('off')
+                #plt.savefig('debug/image_'+format(i,'04d')+'.png', edgecolor='black', dpi=100, facecolor='black')
+                ##if i==0:
+                    ##plt.show()
+                #plt.close()
+        """
+        For thermal emission, the flux is normalized to the total flux in the image,
+        so that one can fit directly for the total flux in the image. Note that if not
+        all the emission is contained in the image, you will miss some of the flux.
+        """
+        if self._thermal:
+            self.intensity /= np.sum(self.intensity)
 
     """
     Plot the images
@@ -310,6 +345,10 @@ class Disk(object):
             self.s12 = kwargs['s12']
             self.theta = np.linspace(0., np.pi, num = np.shape(self.s12)[0])
             if 's11' not in kwargs: self.s11 = np.ones(shape=(np.shape(self.s12)[0],2))
+        if 'wave' in kwargs:
+            self._nu = CC / kwargs['wave']
+        if ((self._thermal) and (self._nu is None)):
+            self._error_msg('To compute thermal images, you need to pass a wavelength \'wave\' in units of microns.')
 
     """
     Define some cos, sin, and tan
@@ -338,9 +377,10 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':        
-    disk = Disk(nframe = 50)
+    #disk = Disk(nframe = 50)
+    disk = Disk(nframe = 50, thermal = True, dpc= 71.)
     t0 = time.time()
-    disk.compute_model(e = 0.1, incl = 78., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5)
+    disk.compute_model(e = 0.3, incl = 78., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5, wave = 1300.)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     disk.plot()
 
