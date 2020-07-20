@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name="DDiT", 
-        version = "1.0",
+        version = "1.1",
         author = "Johan Olofsson",
         author_email = "johan.olofsson@uv.cl",
         url = "https://github.com/joolof/DDiT",
