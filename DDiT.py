@@ -299,16 +299,24 @@ class Disk(object):
         """
         Method to make some plot
         """
-        fig = plt.figure(figsize=(13,6))
-        ax1 = fig.add_axes([0.1, 0.12, 0.4, 0.8])
-        im = ax1.imshow(self.intensity, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.intensity, 1.), vmax = np.percentile(self.intensity, 99.9))
-        ax1.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
-        ax1.set_ylabel('$\Delta \delta$ [$^{\prime\prime}$]')
+        if self._thermal:
+            fig = plt.figure(figsize=(7,7))
+            ax1 = fig.add_axes([0.16, 0.14, 0.8, 0.79])
+            im = ax1.imshow(self.intensity, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.intensity, 1.), vmax = np.percentile(self.intensity, 99.9))
+            ax1.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
+            ax1.set_ylabel('$\Delta \delta$ [$^{\prime\prime}$]')
+            plt.show()
+        else:
+            fig = plt.figure(figsize=(13,6))
+            ax1 = fig.add_axes([0.1, 0.12, 0.4, 0.8])
+            im = ax1.imshow(self.intensity, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.intensity, 1.), vmax = np.percentile(self.intensity, 99.9))
+            ax1.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
+            ax1.set_ylabel('$\Delta \delta$ [$^{\prime\prime}$]')
 
-        ax2 = fig.add_axes([0.55, 0.12, 0.4, 0.8])
-        im = ax2.imshow(self.polarized, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.polarized, 1.), vmax = np.percentile(self.polarized, 99.9))
-        ax2.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
-        plt.show()
+            ax2 = fig.add_axes([0.55, 0.12, 0.4, 0.8])
+            im = ax2.imshow(self.polarized, origin = 'lower', extent = [self._xlim, -self._xlim, -self._xlim, self._xlim], cmap = cmap, vmin = np.percentile(self.polarized, 1.), vmax = np.percentile(self.polarized, 99.9))
+            ax2.set_xlabel('$\Delta \\alpha$ [$^{\prime\prime}$]')
+            plt.show()
 
     """
     Check the parameters that are passed as kwargs
@@ -377,8 +385,8 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':        
-    disk = Disk(nframe = 50)
-    #disk = Disk(nframe = 50, thermal = True, dpc= 71.)
+    #disk = Disk(nframe = 50)
+    disk = Disk(nframe = 50, thermal = True, dpc= 71.)
     t0 = time.time()
     disk.compute_model(e = 0.3, incl = 78., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5, wave = 1300.)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
