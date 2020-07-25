@@ -47,7 +47,7 @@ The `Disk` class has three possible parameters which are the following:
 
 ```python
 nx = 300             # Size of the image in pixels
-pixelscale = 0.01226 # Size of one pixel in arcseconds
+pixscale = 0.01226   # Size of one pixel in arcseconds
 nframe = 50          # Number of frames (see above)
 ```
 
