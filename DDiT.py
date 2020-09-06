@@ -88,7 +88,7 @@ class Disk(object):
         rmax is the maximum radius that should contain most of the density of the disk.
         It should be a * (1 - e**2) / (1-e) which simplyfies as a*(1+e)
         """
-        rmax = self._threshold**(1.e0 / self.pout) * self.a * (1.e0 + self.e) 
+        rmax = self._threshold**(1.e0 / self.pout) * self.a * (1.e0 + self.e)
         radius = rmax**2. - self._xm**2.
         radius[(radius<0)] = 0.
         radius = np.sqrt(radius)
@@ -98,18 +98,18 @@ class Disk(object):
           + (y/radius)**2. + (z/height)**2. = 1.
           + z = (y - ym) / tan(inclination)
         The first one is an ellipse and the second one is the line of sight intercepting the midplane at ym.
-        Replacing z in the first equation with the expression from the second equation yields a second 
+        Replacing z in the first equation with the expression from the second equation yields a second
         degree equation.
         """
         delta = self._ym**2. * self._st2**2. * radius ** 4. - (height**2. + self._st2 * radius**2.) * (self._st2 * self._ym**2. * radius**2. - height**2. * radius**2.)
-        sel = (delta > 0.) 
+        sel = (delta > 0.)
         ye[sel] = ((self._ym[sel] * self._st2 * radius[sel]**2.) + np.sqrt(delta[sel])) / (height[sel]**2. + self._st2 * radius[sel]**2.)
         ys[sel] = ((self._ym[sel] * self._st2 * radius[sel]**2.) - np.sqrt(delta[sel])) / (height[sel]**2. + self._st2 * radius[sel]**2.)
         ze[sel] = self._st * (ye[sel] - self._ym[sel])
         zs[sel] = self._st * (ys[sel] - self._ym[sel])
         xe[sel] = self._xm[sel]
 
-        return xe, ye, ze, ys, zs 
+        return xe, ye, ze, ys, zs
 
     """
     Compute the model for the total and polarized intensity.
@@ -129,8 +129,8 @@ class Disk(object):
           - e: eccentricity
           - omega: argument of pericenter in degrees
           - opang: opening angle of the disk
-          - s11: the scattered light phase function 
-          - s12: the polarized light phase function 
+          - s11: the scattered light phase function
+          - s12: the polarized light phase function
         """
         """
         Check the input parameters
@@ -186,7 +186,7 @@ class Disk(object):
         for i in range(self._nframe-1):
             """
             Define some variables, that need to be re-initialized for every iteration
-            This slows down the code a bit, but it is more accurate and prevents some unfortunate 
+            This slows down the code a bit, but it is more accurate and prevents some unfortunate
             NaNs in some cases (especially if the position angle is 0 degrees for instance.
 
             I had tried to define them once, and set them to 0., but that did not improve the time.
@@ -208,7 +208,7 @@ class Disk(object):
             dist3d = np.sqrt(xe**2. + yi**2. + zi**2.)
             sel3d = (dist3d > 0.)
             """
-            Define the radial and vertical density structure. 
+            Define the radial and vertical density structure.
             For the radial one, I need the azimuthal angle at the midplane, which is np.arctan2(yi, xe)
             """
             r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(np.arctan2(yi, xe) + self.omega))
@@ -260,7 +260,7 @@ class Disk(object):
                 """
                 Differentiate the north and south sides of the disk
                 """
-                sel = (self.azimuth <=0.) 
+                sel = (self.azimuth <=0.)
                 self.intensity[sel] += density[sel] * psca[sel,0]
                 self.intensity[~sel] += density[~sel] * psca[~sel,1]
                 self.polarized[sel] += density[sel] * ppol[sel,0]
@@ -384,7 +384,7 @@ class Disk(object):
         print(message)
         sys.exit()
 
-if __name__ == '__main__':        
+if __name__ == '__main__':
     #disk = Disk(nframe = 50)
     disk = Disk(nframe = 50, thermal = True, dpc= 71.)
     t0 = time.time()
