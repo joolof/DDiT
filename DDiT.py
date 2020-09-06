@@ -379,7 +379,7 @@ class Disk(object):
     """
     def _error_msg(self, message):
         """
-        Print something and quit
+        Print something and quit the program.
         """
         print(message)
         sys.exit()
