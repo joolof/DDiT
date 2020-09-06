@@ -385,7 +385,6 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':
-    #disk = Disk(nframe = 50)
     disk = Disk(nframe = 50, thermal = True, dpc= 71.)
     t0 = time.time()
     disk.compute_model(e = 0.3, incl = 78., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5, wave = 1300.)
