@@ -58,7 +58,15 @@ thermal = True       # A boolean
 dpc = 35.34          # Distance of the central star in pc
 ```
 
-The distance is only necessary to normalize the temperature distribution as explained above. Afterwards, the method `compute_model` has the following input parameters:
+The distance is only necessary to normalize the temperature distribution as explained above. 
+
+For both thermal and scattered light images, there is the possibility to use a gaussian profile for the radial dust density distribution (otherwise, two power laws will be used). When you initialize the class you can pass it the following argument:
+
+```python
+gaussian = True
+```
+
+Afterwards, the method `compute_model` has the following input parameters:
 
 ```python
 a = 0.85             # Semi-major axis of the disk in arcseconds
@@ -66,6 +74,7 @@ incl = 60.           # Inclination, in degrees
 pa = 112.            # Position angle, in degrees
 pin = 5.0            # Inner slope of the density distribution (>0)
 pout = -15.0         # Outer slope of the density distribution (<0)
+dr = 0.1             # Standard deviation of the gaussian profile (if gaussian is set to True)
 e = 0.1              # Eccentricity
 omega = 85.          # Argument of periapsis, in degrees
 gsca = 0.5           # Henyey-Greenstein coefficient for total intensity
