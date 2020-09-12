@@ -15,7 +15,7 @@ class Disk(object):
     """
     Class to compute images of debris disks, in polarized light and total intensity.
     """
-    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None):
+    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None, gaussian = False):
         """
         Class to compute synthetic images of debris disks. To compute a model, simply do the following:
         > disk = Disk()
@@ -39,6 +39,7 @@ class Disk(object):
         self._nframe = nframe
         self._pixscale = pixscale
         self._thermal = thermal
+        self._gaussian = gaussian
         self._dpc = dpc
         self._xlim = self._cx * self._pixscale
         self._Xin, self._Yin = (np.mgrid[0:self._nx, 0:self._nx] - self._cx) * self._pixscale
@@ -63,7 +64,7 @@ class Disk(object):
         """
         The geometric parameters for the disk, with some default values.
         """
-        self.a, self.incl, self.pa, self.pin, self.pout, self.e, self.omega, self.opang = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04
+        self.a, self.incl, self.pa, self.pin, self.pout, self.e, self.omega, self.opang, self.dr = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05
         """
         Parameters for the phase functions
         """
@@ -212,7 +213,10 @@ class Disk(object):
             For the radial one, I need the azimuthal angle at the midplane, which is np.arctan2(yi, xe)
             """
             r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(np.arctan2(yi, xe) + self.omega))
-            densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pout) + (dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pin))**(-.5)
+            if self._gaussian:
+                densr[sel2d] = np.exp(-(r_ref[sel2d] - dist2d[sel2d])**2. / (2 * self.dr**2.))
+            else:
+                densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pout) + (dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pin))**(-.5)
             densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
             if self._thermal:
                 temperature = np.zeros(shape=(self._nx, self._nx))
@@ -390,4 +394,5 @@ if __name__ == '__main__':
     disk.compute_model(e = 0.3, incl = 78., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5, wave = 1300.)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     disk.plot()
+
 
