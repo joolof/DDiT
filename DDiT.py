@@ -64,16 +64,104 @@ class Disk(object):
         """
         The geometric parameters for the disk, with some default values.
         """
-        self.a, self.incl, self.pa, self.pin, self.pout, self.e, self.omega, self.opang, self.dr = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05
+        self._a, self._incl, self._pa, self._pin, self._pout, self._e, self._omega, self._opang, self._dr = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05
         """
         Parameters for the phase functions
         """
-        self.gsca, self.gpol = 0., 0.
+        self._gsca, self._gpol = 0., 0.
         self.theta, self.s11, self.s12 = None, None, None
         """
         Parameters for the thermal images
         """
         self._nu = None
+
+    @property
+    def a(self):
+        return self._a
+
+    @a.setter
+    def a(self, a):
+        self._a = a
+
+    @property
+    def e(self):
+        return self._e
+
+    @e.setter
+    def e(self, e):
+        self._e = e
+
+    @property
+    def pin(self):
+        return self._pin
+
+    @pin.setter
+    def pin(self, pin):
+        self._pin = pin
+
+    @property
+    def opang(self):
+        return self._opang
+
+    @opang.setter
+    def opang(self, opang):
+        self._opang = opang
+
+    @property
+    def gpol(self):
+        return self._gpol
+
+    @gpol.setter
+    def gpol(self, gpol):
+        self._gpol = gpol
+
+    @property
+    def gsca(self):
+        return self._gsca
+
+    @gsca.setter
+    def gsca(self, gsca):
+        self._gsca = gsca
+
+    @property
+    def dr(self):
+        return self._dr
+
+    @dr.setter
+    def dr(self, dr):
+        self._dr = dr
+
+    @property
+    def pout(self):
+        return self._pout
+
+    @pout.setter
+    def pout(self, pout):
+        self._pout = pout
+
+    @property
+    def incl(self):
+        return self._incl * 180. / np.pi
+
+    @incl.setter
+    def incl(self, incl):
+        self._incl = incl * np.pi/180.
+
+    @property
+    def pa(self):
+        return -self._pa * 180. / np.pi
+
+    @pa.setter
+    def pa(self, pa):
+        self._pa = -pa * np.pi/180.
+
+    @property
+    def omega(self):
+        return self._omega * 180. / np.pi
+
+    @omega.setter
+    def omega(self, omega):
+        self._omega = omega * np.pi/180.
 
     """
     Get the entry and exit points of an ellipse in the [y,z] plane
@@ -89,7 +177,7 @@ class Disk(object):
         rmax is the maximum radius that should contain most of the density of the disk.
         It should be a * (1 - e**2) / (1-e) which simplyfies as a*(1+e)
         """
-        rmax = self._threshold**(1.e0 / self.pout) * self.a * (1.e0 + self.e)
+        rmax = self._threshold**(1.e0 / self.pout) * self._a * (1.e0 + self._e)
         radius = rmax**2. - self._xm**2.
         radius[(radius<0)] = 0.
         radius = np.sqrt(radius)
@@ -150,8 +238,8 @@ class Disk(object):
         """
         Project the disk according to the inclination and position angle
         """
-        self._xm = ((np.cos(self.pa) * self._Xin + np.sin(self.pa) * self._Yin))
-        self._ym = ((np.sin(self.pa) * self._Xin - np.cos(self.pa) * self._Yin)) / self._cs
+        self._xm = ((np.cos(self._pa) * self._Xin + np.sin(self._pa) * self._Yin))
+        self._ym = ((np.sin(self._pa) * self._Xin - np.cos(self._pa) * self._Yin)) / self._cs
         self.distance = np.sqrt(self._xm**2. + self._ym**2.)
         self.distance[self._cx, self._cx] = 1. # This is to avoid a division by zero when computing the scattering angle in the midplane.
         """
@@ -212,11 +300,11 @@ class Disk(object):
             Define the radial and vertical density structure.
             For the radial one, I need the azimuthal angle at the midplane, which is np.arctan2(yi, xe)
             """
-            r_ref = self.a * (1.e0 - self.e * self.e) / (1.e0 + self.e * np.cos(np.arctan2(yi, xe) + self.omega))
+            r_ref = self._a * (1.e0 - self._e * self._e) / (1.e0 + self._e * np.cos(np.arctan2(yi, xe) + self._omega))
             if self._gaussian:
-                densr[sel2d] = np.exp(-(r_ref[sel2d] - dist2d[sel2d])**2. / (2 * self.dr**2.))
+                densr[sel2d] = np.exp(-(r_ref[sel2d] - dist2d[sel2d])**2. / (2 * self._dr**2.))
             else:
-                densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pout) + (dist2d[sel2d]/r_ref[sel2d])**(-2.*self.pin))**(-.5)
+                densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-2.*self._pout) + (dist2d[sel2d]/r_ref[sel2d])**(-2.*self._pin))**(-.5)
             densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
             if self._thermal:
                 temperature = np.zeros(shape=(self._nx, self._nx))
@@ -241,8 +329,8 @@ class Disk(object):
                 """
                 if self.theta is None:
                     costheta[sel3d] = (self._ss * yi[sel3d] - self._cs * zi[sel3d]) / dist3d[sel3d]
-                    hg = (1.e0 - self.gsca**2.) / (4. * np.pi * (1.e0 + self.gsca**2. - 2. * self.gsca * costheta[sel3d])**(1.5))
-                    phg = (1.e0 - self.gpol**2.) / (4. * np.pi * (1.e0 + self.gpol**2. - 2. * self.gpol * costheta[sel3d])**(1.5)) * (1.e0 - costheta[sel3d]**2.) / (1.e0 + costheta[sel3d]**2.)
+                    hg = (1.e0 - self._gsca**2.) / (4. * np.pi * (1.e0 + self._gsca**2. - 2. * self._gsca * costheta[sel3d])**(1.5))
+                    phg = (1.e0 - self._gpol**2.) / (4. * np.pi * (1.e0 + self._gpol**2. - 2. * self._gpol * costheta[sel3d])**(1.5)) * (1.e0 - costheta[sel3d]**2.) / (1.e0 + costheta[sel3d]**2.)
                     psca[sel3d,0] = hg
                     psca[sel3d,1] = hg
                     ppol[sel3d,0] = phg
@@ -330,25 +418,25 @@ class Disk(object):
         Check parameters that are being passed
         """
         if 'a' in kwargs:
-            self.a = kwargs['a']
+            self._a = kwargs['a']
         if 'incl' in kwargs:
-            self.incl = kwargs['incl'] * np.pi / 180.
+            self._incl = kwargs['incl'] * np.pi / 180.
         if 'pa' in kwargs:
-            self.pa = -kwargs['pa'] * np.pi / 180.
+            self._pa = -kwargs['pa'] * np.pi / 180.
         if 'pin' in kwargs:
-            self.pin = kwargs['pin']
+            self._pin = kwargs['pin']
         if 'pout' in kwargs:
-            self.pout = kwargs['pout']
+            self._pout = kwargs['pout']
         if 'gsca' in kwargs:
-            self.gsca = kwargs['gsca']
+            self._gsca = kwargs['gsca']
         if 'gpol' in kwargs:
-            self.gpol = kwargs['gpol']
+            self._gpol = kwargs['gpol']
         if 'e' in kwargs:
-            self.e = kwargs['e']
+            self._e = kwargs['e']
         if 'omega' in kwargs:
-            self.omega = kwargs['omega'] * np.pi / 180.
+            self._omega = kwargs['omega'] * np.pi / 180.
         if 'opang' in kwargs:
-            self.opang = kwargs['opang']
+            self._opang = kwargs['opang']
         if 's11' in kwargs:
             self.s11 = kwargs['s11']
             self.theta = np.linspace(0., np.pi, num = np.shape(self.s11)[0])
@@ -369,14 +457,14 @@ class Disk(object):
         """
         Define some variables
         """
-        if self.incl == 0.:
-            self.incl = 0.1 * np.pi / 180.
-        if self.incl == np.pi/2.:
-            self.incl = 89.9 * np.pi / 180.
-        self._cs, self._ss = np.cos(self.incl), np.sin(self.incl)
+        if self._incl == 0.:
+            self._incl = 0.1 * np.pi / 180.
+        if self._incl == np.pi/2.:
+            self._incl = 89.9 * np.pi / 180.
+        self._cs, self._ss = np.cos(self._incl), np.sin(self._incl)
         self._st = self._cs / self._ss
         self._st2 = self._st**2.
-        self._to = np.tan(self.opang)
+        self._to = np.tan(self._opang)
 
     """
     Print some error message and quit
@@ -389,9 +477,9 @@ class Disk(object):
         sys.exit()
 
 if __name__ == '__main__':
-    disk = Disk(nframe = 50, thermal = True, dpc= 71.)
+    disk = Disk(nframe = 50, thermal = False, dpc= 71.)
     t0 = time.time()
-    disk.compute_model(e = 0.3, incl = 78., pa = 110., a = 0.89, gsca = 0.4, gpol = 0.0, omega = 180., opang = 0.035, pin = 20.0, pout = -5.5, wave = 1300.)
+    disk.compute_model(e = 0.2, incl = 70.1, pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 80., opang = 0.035, pin = 20.0, pout = -1.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     disk.plot()
 

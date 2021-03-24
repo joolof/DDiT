@@ -27,11 +27,20 @@ Alternatively, if you do not want to pass the arguments to the function (let's s
 from DDiT import Disk
 disk = Disk()
 disk.a = 0.6                 # in units of arcseconds
-disk.incl = 60. * np.pi / 180.  # if defined from outside the method, has to be in radians
+disk.incl = 60.              # in units of degrees
 disk.e = 0.3
 disk.compute_model()
 ```
-But in that case, you have to make sure that you put the angles in radians (and check the method `_check_parameters` to see how the position angle is defined). Once the model is computed, you will find the images in the variables `disk.intensity` and `disk.polarized` for the total and polarized intensity. Furthermore, in `disk.scattering`, `disk.distance`, and `disk.azimuth` you will have access to the scattering angle, the distance to the star, and the azimuthal angle, in the midplane.
+
+One should note that all the angles should be provided in units of *degrees* (in previous versions of the code, this was not the case when updating values). Once the model is computed, you will have access to the following variables:
+
+```python
+disk.intensity               # the total intensity image
+disk.polarized               # the polarized intensity image
+disk.scattering              # the scattering angle in the midplane
+disk.distance                # the distance to the star, in the midplane
+disk.azimuth                 # the azimuthal angle, in the midplane
+```
 
 ### Description of the code
 
@@ -58,7 +67,7 @@ thermal = True       # A boolean
 dpc = 35.34          # Distance of the central star in pc
 ```
 
-The distance is only necessary to normalize the temperature distribution as explained above. 
+The distance is only necessary to normalize the temperature distribution as explained above (as the semi-major axis is provided in units of arcseconds, the distance is required). 
 
 For both thermal and scattered light images, there is the possibility to use a gaussian profile for the radial dust density distribution (otherwise, two power laws will be used). When you initialize the class you can pass it the following argument:
 
