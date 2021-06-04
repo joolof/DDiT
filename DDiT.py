@@ -15,7 +15,7 @@ class Disk(object):
     """
     Class to compute images of debris disks, in polarized light and total intensity.
     """
-    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None, gaussian = False):
+    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None, gaussian = False, nm = 2.):
         """
         Class to compute synthetic images of debris disks. To compute a model, simply do the following:
         > disk = Disk()
@@ -34,6 +34,7 @@ class Disk(object):
         if ((thermal) and (dpc is None)):
             self._error_msg('To compute thermal images, you need to provide a distance \'dpc\' in pc. This is because of the way the T(r) is defined.')
         self._threshold = 1.e-2
+        self._nm = nm
         self._nx = nx
         self._cx = self._nx//2
         self._nframe = nframe
@@ -64,7 +65,7 @@ class Disk(object):
         """
         The geometric parameters for the disk, with some default values.
         """
-        self._a, self._incl, self._pa, self._pin, self._pout, self._e, self._omega, self._opang, self._dr = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05
+        self._a, self._incl, self._pa, self._pin, self._pout, self._e, self._omega, self._opang, self._dr, self._pmid, self._da, self._gamma = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05, None, None, 2.0
         """
         Parameters for the phase functions
         """
@@ -84,6 +85,14 @@ class Disk(object):
         self._a = a
 
     @property
+    def da(self):
+        return self._da
+
+    @da.setter
+    def da(self, da):
+        self._da = da
+
+    @property
     def e(self):
         return self._e
 
@@ -100,12 +109,28 @@ class Disk(object):
         self._pin = pin
 
     @property
+    def pmid(self):
+        return self._pmid
+
+    @pmid.setter
+    def pmid(self, pmid):
+        self._pmid = pmid
+
+    @property
     def opang(self):
         return self._opang
 
     @opang.setter
     def opang(self, opang):
         self._opang = opang
+
+    @property
+    def gamma(self):
+        return self._gamma
+
+    @gamma.setter
+    def gamma(self, gamma):
+        self._gamma = gamma
 
     @property
     def gpol(self):
@@ -304,8 +329,18 @@ class Disk(object):
             if self._gaussian:
                 densr[sel2d] = np.exp(-(r_ref[sel2d] - dist2d[sel2d])**2. / (2 * self._dr**2.))
             else:
-                densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-2.*self._pout) + (dist2d[sel2d]/r_ref[sel2d])**(-2.*self._pin))**(-.5)
-            densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
+                if self._pmid is None:
+                    densr[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(- self._nm * self._pout) + (dist2d[sel2d]/r_ref[sel2d])**(- self._nm * self._pin))**(-1./self._nm)
+                else:
+                    r_ref2 = (self._a + self._da) * (1.e0 - self._e * self._e) / (1.e0 + self._e * np.cos(np.arctan2(yi, xe) + self._omega))
+                    dens2 = np.zeros(shape=(self._nx, self._nx))
+                    dens3 = np.zeros(shape=(self._nx, self._nx))
+                    dens2[sel2d] = ((dist2d[sel2d]/r_ref[sel2d])**(-self._nm*self._pin) + (dist2d[sel2d]/r_ref[sel2d])**(-self._nm * self._pmid))**(-1./self._nm)
+                    dens3[sel2d] = dens2[sel2d] * (dist2d[sel2d]/r_ref2[sel2d])**(self._pout-self._pmid)
+                    densr[sel2d] = (dens2[sel2d]**(-self._nm) + dens3[sel2d]**(-self._nm))**(-1./self._nm)
+                    densr[sel2d] = densr[sel2d] / np.max(densr[sel2d])
+            densz[sel2d] = np.exp(-(np.abs(zi[sel2d]) / (self._to * dist2d[sel2d]))**self._gamma)
+            # densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
             if self._thermal:
                 temperature = np.zeros(shape=(self._nx, self._nx))
                 expterm = np.zeros(shape=(self._nx, self._nx))
@@ -419,12 +454,16 @@ class Disk(object):
         """
         if 'a' in kwargs:
             self._a = kwargs['a']
+        if 'da' in kwargs:
+            self._da = kwargs['da']
         if 'incl' in kwargs:
             self._incl = kwargs['incl'] * np.pi / 180.
         if 'pa' in kwargs:
             self._pa = -kwargs['pa'] * np.pi / 180.
         if 'pin' in kwargs:
             self._pin = kwargs['pin']
+        if 'pmid' in kwargs:
+            self._pmid = kwargs['pmid']
         if 'pout' in kwargs:
             self._pout = kwargs['pout']
         if 'gsca' in kwargs:
@@ -449,6 +488,8 @@ class Disk(object):
             self._nu = CC / kwargs['wave']
         if ((self._thermal) and (self._nu is None)):
             self._error_msg('To compute thermal images, you need to pass a wavelength \'wave\' in units of microns.')
+        if ((self._pmid is not None) and (self._da is None)):
+            self._error_msg('If you need a third power-law you need to provide \'da\'')
 
     """
     Define some cos, sin, and tan
@@ -479,7 +520,7 @@ class Disk(object):
 if __name__ == '__main__':
     disk = Disk(nframe = 50, thermal = False, dpc= 71.)
     t0 = time.time()
-    disk.compute_model(e = 0.2, incl = 70.1, pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 80., opang = 0.035, pin = 20.0, pout = -1.5)
+    disk.compute_model(e = 0.2, incl = 70.1, pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 80., opang = 0.035, pin = 20.0, pout = -5.5, pmid = 0.5, da = 0.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     disk.plot()
 
