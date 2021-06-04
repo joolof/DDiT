@@ -7,7 +7,7 @@ A Python code to (quickly) produce synthetic images of debris disks, either in t
 
 ### Recent changes
 
-- 2021/06/04: the vertical density profile is now an exponential fall-off, whch gives more liberty when trying to constrain the scale height of debris disks. There is an additional free parameter `ga`.
+- 2021/06/04: the vertical density profile is now an exponential fall-off, which gives more liberty when trying to constrain the scale height of debris disks. There is an additional free parameter `gamma` to control the fall-off (see Augereau et al. 1999).
 
 
 
