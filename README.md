@@ -1,9 +1,15 @@
-# DDiT
+# [DDiT](DDiT)
 ## Debris DIsks Tool
 
 ![screenshot](screenshots/DDiT.png)
 
 A Python code to (quickly) produce synthetic images of debris disks, either in total and polarized intensity using the Henyey-Greenstein approximation or in thermal emission (making some approximations). In the model, the disk is not infinitely flat and it should work for any inclinations except for `i=0` or `i=90` (otherwise there may be some division by zero).
+
+### Recent changes
+
+- 2021/06/04: the vertical density profile is now an exponential fall-off, whch gives more liberty when trying to constrain the scale height of debris disks. There is an additional free parameter `ga`.
+
+
 
 ### Installation and first model
 
