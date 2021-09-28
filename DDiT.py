@@ -520,7 +520,7 @@ class Disk(object):
 if __name__ == '__main__':
     disk = Disk(nframe = 50, thermal = False, dpc= 71.)
     t0 = time.time()
-    disk.compute_model(e = 0.0, incl = 70.1, pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 80., opang = 0.035, pin = 20.0, pout = -5.5, pmid = 0.5, da = 0.5)
+    disk.compute_model(e = 0.2, incl = 70.1, pa = 110., a = 0.89, gsca = 0.4, gpol = 0.6, omega = 80., opang = 0.035, pin = 20.0, pout = -5.5, pmid = 0.5, da = 0.5)
     print('Took: ' + format(time.time()-t0, '0.2f') + ' seconds.')
     disk.plot()
 
