@@ -345,6 +345,7 @@ class Disk(object):
                     densr[sel2d] = densr[sel2d] / np.max(densr[sel2d])
             densz[sel2d] = np.exp(-(np.abs(zi[sel2d]) / (self._to * dist2d[sel2d]))**self._gamma)
             # densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
+            # densz[sel2d] = np.exp(-np.log(2) * zi[sel2d]**2 / ((self._to * dist2d[sel2d])**2.))
             if self._thermal:
                 temperature = np.zeros(shape=(self._nx, self._nx))
                 expterm = np.zeros(shape=(self._nx, self._nx))
