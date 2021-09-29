@@ -269,7 +269,8 @@ class Disk(object):
         self._xm = ((np.cos(self._pa) * self._Xin + np.sin(self._pa) * self._Yin))
         self._ym = ((np.sin(self._pa) * self._Xin - np.cos(self._pa) * self._Yin)) / self._cs
         self.distance = np.sqrt(self._xm**2. + self._ym**2.)
-        self.distance[self._cx, self._cx] = 1. # This is to avoid a division by zero when computing the scattering angle in the midplane.
+        if self._nx % 2 == 1:
+            self.distance[self._cx, self._cx] = 1. # This is to avoid a division by zero when computing the scattering angle in the midplane.
         """
         Compute the azimuth and scattering angles in the disk midplane, so
         that they can be used outside of the class.
