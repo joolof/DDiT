@@ -471,6 +471,8 @@ class Disk(object):
             self._pmid = kwargs['pmid']
         if 'pout' in kwargs:
             self._pout = kwargs['pout']
+        if 'gamma' in kwargs:
+            self._gamma = kwargs['gamma']
         if 'gsca' in kwargs:
             self._gsca = kwargs['gsca']
         if 'gpol' in kwargs:
