@@ -15,7 +15,7 @@ class Disk(object):
     """
     Class to compute images of debris disks, in polarized light and total intensity.
     """
-    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None, gaussian = False, nm = 2., engler = False, threshold = 1.e-2):
+    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 150, thermal = False, dpc = None, gaussian = False, nm = 2., engler = False, threshold = 1.e-2):
         """
         Class to compute synthetic images of debris disks. To compute a model, simply do the following:
         > disk = Disk()
