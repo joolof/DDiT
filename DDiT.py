@@ -15,7 +15,7 @@ class Disk(object):
     """
     Class to compute images of debris disks, in polarized light and total intensity.
     """
-    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None, gaussian = False, nm = 2.):
+    def __init__(self, nx = 300, pixscale = 0.01226, nframe = 50, thermal = False, dpc = None, gaussian = False, nm = 2., engler = False, threshold = 1.e-2):
         """
         Class to compute synthetic images of debris disks. To compute a model, simply do the following:
         > disk = Disk()
@@ -33,8 +33,9 @@ class Disk(object):
             print('It is probably better if \'nframe\' is an even number.')
         if ((thermal) and (dpc is None)):
             self._error_msg('To compute thermal images, you need to provide a distance \'dpc\' in pc. This is because of the way the T(r) is defined.')
-        self._threshold = 1.e-2
+        self._threshold = threshold
         self._nm = nm
+        self._engler = engler
         self._nx = nx
         if nx%2 ==0:
             self._cx = self._nx//2 - 0.5
@@ -343,9 +344,11 @@ class Disk(object):
                     dens3[sel2d] = dens2[sel2d] * (dist2d[sel2d]/r_ref2[sel2d])**(self._pout-self._pmid)
                     densr[sel2d] = (dens2[sel2d]**(-self._nm) + dens3[sel2d]**(-self._nm))**(-1./self._nm)
                     densr[sel2d] = densr[sel2d] / np.max(densr[sel2d])
-            densz[sel2d] = np.exp(-(np.abs(zi[sel2d]) / (self._to * dist2d[sel2d]))**self._gamma)
+            if self._engler:
+                densz[sel2d] = np.exp(-np.log(2) * zi[sel2d]**2 / ((self._to * dist2d[sel2d])**2.))
+            else:
+                densz[sel2d] = np.exp(-(np.abs(zi[sel2d]) / (self._to * dist2d[sel2d]))**self._gamma)
             # densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
-            # densz[sel2d] = np.exp(-np.log(2) * zi[sel2d]**2 / ((self._to * dist2d[sel2d])**2.))
             if self._thermal:
                 temperature = np.zeros(shape=(self._nx, self._nx))
                 expterm = np.zeros(shape=(self._nx, self._nx))
