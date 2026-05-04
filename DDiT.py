@@ -199,6 +199,13 @@ class Disk(object):
     def omega(self, omega):
         self._omega = omega * np.pi/180.
 
+    @property
+    def vprofile(self):
+        return self._vprofile
+
+    @vprofile.setter
+    def vprofile(self, vprofile):
+        self._vprofile = vprofile
     """
     Get the entry and exit points of an ellipse in the [y,z] plane
     """
