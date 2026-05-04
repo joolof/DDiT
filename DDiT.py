@@ -71,6 +71,13 @@ class Disk(object):
         """
         self._a, self._incl, self._pa, self._pin, self._pout, self._e, self._omega, self._opang, self._dr, self._pmid, self._da, self._gamma = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05, None, None, 2.0
         """
+        Vertical profile selector.  Supported values:
+          "generalized_gaussian" (default): dN/dz ~ exp(-|z/H|^gamma)
+          "lorentzian":                     dN/dz ~ 1 / (1 + (z/H)^2)
+        H = r * tan(opang) in both cases.
+        """
+        self._vprofile = "generalized_gaussian"
+        """
         Parameters for the phase functions
         """
         self._gsca, self._gpol = 0., 0.
@@ -346,6 +353,9 @@ class Disk(object):
                     densr[sel2d] = densr[sel2d] / np.max(densr[sel2d])
             if self._engler:
                 densz[sel2d] = np.exp(-np.log(2) * zi[sel2d]**2 / ((self._to * dist2d[sel2d])**2.))
+            elif self._vprofile == "lorentzian":
+                # Direct Lorentzian dN/dz:  ~ 1 / (1 + (z/H)^2),  H = r*tan(opang)
+                densz[sel2d] = 1.0 / (1.0 + (zi[sel2d] / (self._to * dist2d[sel2d]))**2.)
             else:
                 densz[sel2d] = np.exp(-(np.abs(zi[sel2d]) / (self._to * dist2d[sel2d]))**self._gamma)
             # densz[sel2d] = np.exp(-zi[sel2d]**2 / (2. * (self._to * dist2d[sel2d])**2.))
@@ -476,6 +486,8 @@ class Disk(object):
             self._pout = kwargs['pout']
         if 'gamma' in kwargs:
             self._gamma = kwargs['gamma']
+        if 'vprofile' in kwargs:
+            self._vprofile = kwargs['vprofile']
         if 'gsca' in kwargs:
             self._gsca = kwargs['gsca']
         if 'gpol' in kwargs:
