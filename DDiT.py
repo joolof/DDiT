@@ -69,14 +69,17 @@ class Disk(object):
         """
         The geometric parameters for the disk, with some default values.
         """
-        self._a, self._incl, self._pa, self._pin, self._pout, self._e, self._omega, self._opang, self._dr, self._pmid, self._da, self._gamma = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05, None, None, 2.0
+        self._a, self._incl, self._pa, self._pin, self._pout, self._e, self._omega, self._opang, self._dr, self._pmid, self._da, self._gamma = 1., 0.1, 152.1*np.pi/180., 25., -2.5, 0., 0.,0.04, 0.05, None, None, 2.0        
         """
         Vertical profile selector.  Supported values:
           "generalized_gaussian" (default): dN/dz ~ exp(-|z/H|^gamma)
           "lorentzian":                     dN/dz ~ 1 / (1 + (z/H)^2)
+
         H = r * tan(opang) in both cases.
         """
+        self._supported_vprofiles = ("generalized_gaussian", "lorentzian")
         self._vprofile = "generalized_gaussian"
+        
         """
         Parameters for the phase functions
         """
@@ -143,6 +146,19 @@ class Disk(object):
     def gamma(self, gamma):
         self._gamma = gamma
 
+    @property
+    def vprofile(self):
+        return self._vprofile
+
+    @vprofile.setter
+    def vprofile(self, vprofile):
+        if vprofile not in self._supported_vprofiles:
+            self._error_msg(
+                "Unsupported vertical profile '{}'. Supported values are: {}"
+                .format(vprofile, ", ".join(self._supported_vprofiles))
+            )
+        self._vprofile = vprofile
+        
     @property
     def gpol(self):
         return self._gpol
@@ -487,7 +503,7 @@ class Disk(object):
         if 'gamma' in kwargs:
             self._gamma = kwargs['gamma']
         if 'vprofile' in kwargs:
-            self._vprofile = kwargs['vprofile']
+            self.vprofile = kwargs['vprofile']
         if 'gsca' in kwargs:
             self._gsca = kwargs['gsca']
         if 'gpol' in kwargs:
